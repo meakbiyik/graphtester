@@ -77,8 +77,7 @@ def _weisfeiler_lehman_step(G: ig.Graph, node_labels, edge_attr=None):
 
 
 def _init_node_labels(G: ig.Graph, node_attr: str) -> List[str]:
-    """
-    Initialize the node labels
+    """Initialize the node labels.
 
     Parameters
     ----------

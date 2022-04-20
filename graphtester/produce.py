@@ -1,6 +1,6 @@
 """Get graphs from certain graph classes.
 
-We either generate the graphs ourselves, or get it from 
+We either generate the graphs ourselves, or get it from
 http://users.cecs.anu.edu.au/~bdm/data/graphs.html. It is
 possible to query for other graph classes in this repository,
 but the following candidates do not include graphs with same
@@ -191,7 +191,9 @@ def _generate_nonisomorphic_graphs(
 def _download_graph6_graphs(
     graph_class: str, node_counts=[3, 4, 5, 6, 7], use_node_count_in_url=True
 ) -> Dict[int, List[ig.Graph]]:
-    """Download the given graph class from http://users.cecs.anu.edu.au/~bdm/data/graphs.html.
+    """Download the given graph class from Brendan McKay's repository.
+
+    See http://users.cecs.anu.edu.au/~bdm/data/graphs.html.
 
     Only return the graphs that are sufficiently small (i.e. less than 1000 nodes),
     and with more than one graph per given node count.
@@ -212,7 +214,10 @@ def _download_graph6_graphs(
     with requests.Session() as s:
         for node_count in node_counts:
             node_count_in_url = node_count if not use_node_count_in_url else ""
-            link = f"http://users.cecs.anu.edu.au/~bdm/data/{graph_class}{node_count_in_url}.g6"
+            link = (
+                f"http://users.cecs.anu.edu.au/~bdm/data/"
+                f"{graph_class}{node_count_in_url}.g6"
+            )
 
             with tempfile.TemporaryFile() as temp_file:
                 r = s.get(link)

@@ -22,7 +22,7 @@
         {
             "label": "Run Python Tests with coverage",
             "type": "shell",
-            "command": "poetry run coverage run --include app/**  -m pytest && poetry run coverage xml --include app/**",
+            "command": "poetry run coverage run --include graphtester/**  -m pytest && poetry run coverage xml --include graphtester/**",
             "options": {
 				"cwd": "${workspaceFolder}"
             },
