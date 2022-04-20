@@ -1,0 +1,16 @@
+{
+    "python.formatting.provider": "black",
+    "taskExplorer.exclude": [
+        ".venv/**",
+        "graphtester/**",
+        "scripts/**",
+        "tests/**",
+        "conftest.py"
+    ],
+    "files.eol": "\n",
+    "python.testing.pytestArgs": [
+        "tests"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+}
