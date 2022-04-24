@@ -1,6 +1,5 @@
 [flake8]
-ignore = D203
-extend-ignore = E203
+extend-ignore = D203 E203
 exclude =
     .git,
     .venv,

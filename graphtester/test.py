@@ -92,7 +92,10 @@ def _init_node_labels(G: ig.Graph, node_attr: str) -> List[str]:
         The node labels.
     """
     if node_attr:
-        return [str(attr) for attr in G.vs.get_attribute_values(node_attr)]
+        return [
+            str(attr) + str(deg)
+            for attr, deg in zip(G.vs.get_attribute_values(node_attr), G.vs.degree())
+        ]
     else:
         return [str(deg) for deg in G.vs.degree()]
 

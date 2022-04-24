@@ -1,9 +1,10 @@
 """Get graphs from certain graph classes.
 
 We either generate the graphs ourselves, or get it from
-http://users.cecs.anu.edu.au/~bdm/data/graphs.html. It is
+https://pallini.di.uniroma1.it/Graphs.html (or alternatively
+http://users.cecs.anu.edu.au/~bdm/data/graphs.html). It is
 possible to query for other graph classes in this repository,
-but the following candidates do not include graphs with same
+but the following candidates do not have multiple graphs with same
 number of nodes, so are not included here:
 
 - "cfi", # Cai, Fürer and Immerman Graphs
@@ -14,6 +15,11 @@ number of nodes, so are not included here:
 - "ag", # Affine geometry graphs
 - "sts", # Steiner Triple Systems graphs
 - "paley", # Paley graphs
+
+The following graph classes contain graphs that are too large to
+feasibly label:
+
+- "pp", # Projective Plane Graphs
 """
 import io
 import re
@@ -30,18 +36,47 @@ import requests
 _DATA_DIR = Path(__file__).parents[1] / "data"
 
 GRAPH_CLASSES = {
-    "all": [3, 4, 5, 6, 7],  # All nonisomorphic graphs
-    "pp": [4, 5, 6, 7, 8],  # Projective Plane Graphs
-    "eul": [5, 6, 7],  # Eulerian graphs
-    "planar_conn": [3, 4, 5, 6, 7],  # Planar Connected Graphs
-    "chordal": [4, 5, 6, 7, 8],  # Chordal graphs
-    "perfect": [5, 6, 7],  # Perfect graphs
-    "highly_irregular": [8, 9, 10, 11, 12, 13],  # Highly irregular graphs
-    "crit4": [7, 8, 9, 10],  # Edge-4-critical graphs
-    "sr251256": [25],  # Strongly Regular Graphs SR(25,12,5,6)
-    "sr261034": [26],  # Strongly Regular Graphs SR(26,10,3,4)
-    "sr281264": [28],  # Strongly Regular Graphs SR(28,12,6,4)
-    "sr291467": [29],  # Strongly Regular Graphs SR(29,14,6,7)
+    "all": [3, 4, 5, 6, 7],
+    "eul": [3, 4, 5, 6, 7, 8],
+    "planar_conn": [3, 4, 5, 6, 7],
+    "chordal": [4, 5, 6, 7],
+    "perfect": [5, 6, 7],
+    "highlyirregular": [8, 9, 10, 11, 12, 13],
+    "crit4": [7, 8, 9, 10],
+    "selfcomp": [5, 8, 9],
+    "sr16622": [16],
+    "sr251256": [25],
+    "sr261034": [26],
+    "sr281264": [28],
+    "sr291467": [29],
+}
+
+FAST_GRAPH_CLASSES = {
+    "all": [3, 4, 5, 6, 7],
+    "eul": [3, 4, 5, 6, 7, 8],
+    "planar_conn": [3, 4, 5, 6, 7],
+    "chordal": [4, 5, 6, 7],
+    "perfect": [5, 6, 7],
+    "highlyirregular": [8, 9, 10, 11, 12, 13],
+    "crit4": [7, 8, 9, 10],
+    "selfcomp": [5, 8, 9],
+    "sr16622": [16],
+}
+
+GRAPH_CLASS_DESCRIPTIONS = {
+    "all": "All nonisomorphic",
+    "eul": "Eulerian",
+    "planar_conn": "Planar connected",
+    "chordal": "Chordal",
+    "perfect": "Perfect",
+    "highlyirregular": "Highly irregular",
+    "crit4": "Edge-4-critical",
+    "selfcomp": "Self-complementary",
+    "sr16622": "SR(16,6,2,2)",
+    "sr251256": "SR(25,12,5,6)",
+    "sr261034": "SR(26,10,3,4)",
+    "sr281264": "SR(28,12,6,4)",
+    "sr291467": "SR(29,14,6,7)",
 }
 
 _ISOCLASS_SIZES = {
@@ -76,7 +111,7 @@ def get_graphs(graph_class) -> Dict[int, List[ig.Graph]]:
     dir_exists = _check_data_dir(data_subdir)
 
     if dir_exists:
-        node_counts = [int(f.stem) for f in data_subdir.iterdir() if f.is_dir()]
+        node_counts = sorted([int(f.stem) for f in data_subdir.iterdir() if f.is_dir()])
         graphs = {}
         for node_count in node_counts:
             data_subsubdir = data_subdir / str(node_count)
@@ -94,13 +129,18 @@ def get_graphs(graph_class) -> Dict[int, List[ig.Graph]]:
         _save_graphs(graph_class, graphs)
         return graphs
 
-    elif graph_class in ["chordal", "perfect", "eul", "highly_irregular"]:
+    elif graph_class in ["chordal", "perfect", "eul", "highlyirregular", "selfcomp"]:
         graphs = _download_graph6_graphs(graph_class, node_counts)
         _save_graphs(graph_class, graphs)
         return graphs
 
     elif graph_class in ["planar_conn", "crit4"]:
         graphs = _download_graph6_graphs(graph_class + ".", node_counts)
+        _save_graphs(graph_class, graphs)
+        return graphs
+
+    elif graph_class == "sr16622":
+        graphs = _get_sr16622_graphs()
         _save_graphs(graph_class, graphs)
         return graphs
 
@@ -188,6 +228,62 @@ def _generate_nonisomorphic_graphs(
     return graphs
 
 
+def _get_sr16622_graphs() -> Dict[int, List[ig.Graph]]:
+    """
+    Get the SR(16,6,2,2) graphs.
+
+    Returns
+    -------
+    dict
+        A dictionary of graphs, indexed by their vertex count.
+    """
+    adj_matrices_str = [
+        [
+            "0111111000000000",
+            "1011000111000000",
+            "1101000000111000",
+            "1110000000000111",
+            "1000011100100100",
+            "1000101010010010",
+            "1000110001001001",
+            "0100100011100100",
+            "0100010101010010",
+            "0100001110001001",
+            "0010100100011100",
+            "0010010010101010",
+            "0010001001110001",
+            "0001100100100011",
+            "0001010010010101",
+            "0001001001001110",
+        ],
+        [
+            "0111111000000000",
+            "1011000111000000",
+            "1100100100110000",
+            "1100010010001100",
+            "1010001000101010",
+            "1001001000010101",
+            "1000110001000011",
+            "0110000001010110",
+            "0101000001101001",
+            "0100001110000011",
+            "0010100010011001",
+            "0010010100100101",
+            "0001100010100110",
+            "0001010100011010",
+            "0000101101001100",
+            "0000011011110000",
+        ],
+    ]
+
+    graphs = []
+    for mat_str in adj_matrices_str:
+        mat_bool = [[int(elem) for elem in list(row)] for row in mat_str]
+        graphs.append(ig.Graph.Adjacency(mat_bool, mode="undirected"))
+
+    return {16: graphs}
+
+
 def _download_graph6_graphs(
     graph_class: str, node_counts=[3, 4, 5, 6, 7], use_node_count_in_url=True
 ) -> Dict[int, List[ig.Graph]]:
@@ -211,25 +307,22 @@ def _download_graph6_graphs(
         A dictionary of graph lists, indexed by their vertex count.
     """
     graphs = {}
-    with requests.Session() as s:
-        for node_count in node_counts:
-            node_count_in_url = node_count if not use_node_count_in_url else ""
-            link = (
-                f"http://users.cecs.anu.edu.au/~bdm/data/"
-                f"{graph_class}{node_count_in_url}.g6"
-            )
+    for node_count in node_counts:
+        node_count_in_url = node_count if use_node_count_in_url else ""
+        link = (
+            f"http://users.cecs.anu.edu.au/~bdm/data/"
+            f"{graph_class}{node_count_in_url}.g6"
+        )
 
-            with tempfile.TemporaryFile() as temp_file:
-                r = s.get(link)
-                temp_file.write(r.content)
-                temp_file.seek(0)
-                g6_graphs = nx.read_graph6(temp_file)
+        with tempfile.TemporaryFile() as temp_file:
+            content = _download_content(link)
+            temp_file.write(content)
+            temp_file.seek(0)
+            g6_graphs = nx.read_graph6(temp_file)
 
-            graphs[node_count] = [
-                ng
-                for g in g6_graphs
-                if (ng := ig.Graph.from_networkx(g)).vcount() < 1000
-            ]
+        graphs[node_count] = [
+            ng for g in g6_graphs if (ng := ig.Graph.from_networkx(g)).vcount() < 1000
+        ]
 
     graphs = {
         node_count: graph_list
@@ -257,9 +350,9 @@ def _download_zipped_graphs(graph_class: str) -> Dict[int, List[ig.Graph]]:
         A dictionary of graph lists, indexed by their vertex count.
     """
     link = f"https://pallini.di.uniroma1.it/library/undirected_dim/{graph_class}.zip"
-    r = requests.get(link)
+    content = _download_content(link)
 
-    with zipfile.ZipFile(io.BytesIO(r.content)) as z:
+    with zipfile.ZipFile(io.BytesIO(content)) as z:
         graphs = defaultdict(list)
         for f in z.infolist():
             if zipfile.Path(z, f.filename).is_file() and "__MACOSX" not in f.filename:
@@ -275,6 +368,33 @@ def _download_zipped_graphs(graph_class: str) -> Dict[int, List[ig.Graph]]:
     }
 
     return graphs
+
+
+def _download_content(link: str) -> bytes:
+    """Download the given link.
+
+    Handle HTTP errors.
+
+    Parameters
+    ----------
+    link : str
+        The link to download.
+
+    Returns
+    -------
+    bytes
+        The downloaded content.
+    """
+    with requests.Session() as s:
+        r = s.get(link)
+
+    if r.status_code != 200:
+        raise requests.HTTPError(
+            f"Could not download graphs from the address"
+            f"{link}. HTTP error {r.status_code}"
+        )
+
+    return r.content
 
 
 def _parse_dimacs(dimacs_file: List[bytes]) -> ig.Graph:
