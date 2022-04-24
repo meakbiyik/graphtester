@@ -44,11 +44,12 @@ def evaluate_method(
 
     Returns
     -------
-    Union[List[int], Tuple[List[int], Dict[str, List[Tuple[int, int]]]]]
-        The number of failed tests for the given labeling method. If
-        return_failed_tests is True, the failed tests are returned as a
-        dictionary mapping the graph class - vertex count in the form
-        f"{cls}_{vcount}" to a list of failed test indices.
+    result : List[int]
+        The number of failed tests for the given labeling method.
+    failures : Tuple[List[int], Dict[str, List[Tuple[int, int]]]]
+        Failed tests, as a dictionary with keys as the graph class - vertex
+        count in the form f"{cls}_{vcount}", mapping to a list of failed
+        test indices. Only present if return_failed_tests is True.
     """
     max_graph_count = 1e12 if max_graph_count is None else max_graph_count
     labeling = (labeling,) if isinstance(labeling, str) else labeling
