@@ -126,35 +126,27 @@ def get_graphs(graph_class) -> Dict[int, List[ig.Graph]]:
         graphs = {}
         for node_count in node_counts:
             graphs[node_count] = _generate_nonisomorphic_graphs(node_count)
-        _save_graphs(graph_class, graphs)
-        return graphs
 
     elif graph_class in ["chordal", "perfect", "eul", "highlyirregular", "selfcomp"]:
         graphs = _download_graph6_graphs(graph_class, node_counts)
-        _save_graphs(graph_class, graphs)
-        return graphs
 
     elif graph_class in ["planar_conn", "crit4"]:
         graphs = _download_graph6_graphs(graph_class + ".", node_counts)
-        _save_graphs(graph_class, graphs)
-        return graphs
 
     elif graph_class == "sr16622":
         graphs = _get_sr16622_graphs()
-        _save_graphs(graph_class, graphs)
-        return graphs
 
     elif graph_class.startswith("sr"):
         graphs = _download_graph6_graphs(
             graph_class, node_counts, use_node_count_in_url=False
         )
-        _save_graphs(graph_class, graphs)
-        return graphs
 
     else:
         graphs = _download_zipped_graphs(graph_class)
-        _save_graphs(graph_class, graphs)
-        return graphs
+
+    _save_graphs(graph_class, graphs)
+
+    return graphs
 
 
 def _check_data_dir(dir: Path) -> bool:
