@@ -1,4 +1,4 @@
-# random-wl-tests
+# graphtester
 
 ## Contribution
 

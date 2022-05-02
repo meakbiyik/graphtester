@@ -2,7 +2,8 @@
 
 We either generate the graphs ourselves, or get it from
 https://pallini.di.uniroma1.it/Graphs.html (or alternatively
-http://users.cecs.anu.edu.au/~bdm/data/graphs.html). It is
+http://users.cecs.anu.edu.au/~bdm/data/graphs.html, or
+https://www.distanceregular.org/indexes/upto50vertices.html). It is
 possible to query for other graph classes in this repository,
 but the following candidates do not have multiple graphs with same
 number of nodes, so are not included here:
@@ -20,6 +21,9 @@ The following graph classes contain graphs that are too large to
 feasibly label:
 
 - "pp", # Projective Plane Graphs
+
+Similarly, we omit SR(35,18,9,9) as the graph class is too
+large (3854) considering the vertex count.
 """
 import io
 import re
@@ -31,36 +35,39 @@ from typing import Dict, List
 
 import igraph as ig
 import networkx as nx
+import pandas as pd
 import requests
+from bs4 import BeautifulSoup
 
 _DATA_DIR = Path(__file__).parents[1] / "data"
 
 GRAPH_CLASSES = {
     "all": [3, 4, 5, 6, 7],
-    "eul": [3, 4, 5, 6, 7, 8],
+    "eul": [3, 4, 5, 6, 7, 8, 9],
     "planar_conn": [3, 4, 5, 6, 7],
-    "chordal": [4, 5, 6, 7],
+    "chordal": [4, 5, 6, 7, 8],
     "perfect": [5, 6, 7],
     "highlyirregular": [8, 9, 10, 11, 12, 13],
-    "crit4": [7, 8, 9, 10],
-    "selfcomp": [5, 8, 9],
-    "sr16622": [16],
-    "sr251256": [25],
-    "sr261034": [26],
-    "sr281264": [28],
-    "sr291467": [29],
+    "crit4": [7, 8, 9, 10, 11],
+    "selfcomp": [5, 8, 9, 12],
+    "strongly_regular": [16, 25, 26, 28, 29, 36, 40, 45, 50, 64],
+    # fmt: off
+    "distance_regular": [
+        10, 12, 14, 15, 16, 18, 20, 21, 22, 24, 25,
+        26, 27, 28, 30, 32, 35, 36, 40, 42, 45, 50,
+    ],
+    # fmt: on
 }
 
 FAST_GRAPH_CLASSES = {
     "all": [3, 4, 5, 6, 7],
-    "eul": [3, 4, 5, 6, 7, 8],
+    "eul": [3, 4, 5, 6, 7, 8, 9],
     "planar_conn": [3, 4, 5, 6, 7],
-    "chordal": [4, 5, 6, 7],
+    "chordal": [4, 5, 6, 7, 8],
     "perfect": [5, 6, 7],
     "highlyirregular": [8, 9, 10, 11, 12, 13],
-    "crit4": [7, 8, 9, 10],
-    "selfcomp": [5, 8, 9],
-    "sr16622": [16],
+    "crit4": [7, 8, 9, 10, 11],
+    "selfcomp": [5, 8, 9, 12],
 }
 
 GRAPH_CLASS_DESCRIPTIONS = {
@@ -72,11 +79,8 @@ GRAPH_CLASS_DESCRIPTIONS = {
     "highlyirregular": "Highly irregular",
     "crit4": "Edge-4-critical",
     "selfcomp": "Self-complementary",
-    "sr16622": "SR(16,6,2,2)",
-    "sr251256": "SR(25,12,5,6)",
-    "sr261034": "SR(26,10,3,4)",
-    "sr281264": "SR(28,12,6,4)",
-    "sr291467": "SR(29,14,6,7)",
+    "strongly_regular": "Strongly regular",
+    "distance_regular": "Distance regular (non-exhaustive)",
 }
 
 _ISOCLASS_SIZES = {
@@ -85,6 +89,20 @@ _ISOCLASS_SIZES = {
     5: 34,
     6: 156,
     7: 1044,
+}
+
+_SR_LINKS = {
+    16: "http://www.maths.gla.ac.uk/~es/SRGs/16-6-2-2",
+    25: "http://www.maths.gla.ac.uk/~es/SRGs/25-12-5-6",
+    26: "http://www.maths.gla.ac.uk/~es/SRGs/26-10-3-4",
+    28: "http://www.maths.gla.ac.uk/~es/SRGs/28-12-6-4",
+    29: "http://www.maths.gla.ac.uk/~es/SRGs/29-14-6-7",
+    35: "http://www.maths.gla.ac.uk/~es/SRGs/35-18-9-9",
+    36: "http://www.maths.gla.ac.uk/~es/SRGs/36-14-4-6",
+    40: "http://www.maths.gla.ac.uk/~es/SRGs/40-12-2-4",
+    45: "http://www.maths.gla.ac.uk/~es/SRGs/45-12-3-3",
+    50: "http://www.maths.gla.ac.uk/~es/SRGs/50-21-8-9",
+    64: "http://www.maths.gla.ac.uk/~es/SRGs/64-18-2-6",
 }
 
 
@@ -108,7 +126,7 @@ def get_graphs(graph_class) -> Dict[int, List[ig.Graph]]:
         raise ValueError(f"Unknown graph class: {graph_class}")
 
     data_subdir = _DATA_DIR / graph_class
-    dir_exists = _check_data_dir(data_subdir)
+    dir_exists = _check_data_dir(data_subdir, graph_class)
 
     if dir_exists:
         node_counts = sorted([int(f.stem) for f in data_subdir.iterdir() if f.is_dir()])
@@ -133,13 +151,11 @@ def get_graphs(graph_class) -> Dict[int, List[ig.Graph]]:
     elif graph_class in ["planar_conn", "crit4"]:
         graphs = _download_graph6_graphs(graph_class + ".", node_counts)
 
-    elif graph_class == "sr16622":
-        graphs = _get_sr16622_graphs()
+    elif graph_class == "strongly_regular":
+        graphs = _download_sr_graphs(node_counts)
 
-    elif graph_class.startswith("sr"):
-        graphs = _download_graph6_graphs(
-            graph_class, node_counts, use_node_count_in_url=False
-        )
+    elif graph_class == "distance_regular":
+        graphs = _download_distance_regular_graphs(node_counts)
 
     else:
         graphs = _download_zipped_graphs(graph_class)
@@ -149,13 +165,15 @@ def get_graphs(graph_class) -> Dict[int, List[ig.Graph]]:
     return graphs
 
 
-def _check_data_dir(dir: Path) -> bool:
-    """Check if the data directory exists.
+def _check_data_dir(dir: Path, graph_class: str) -> bool:
+    """Check if the data directory exists and is sane.
 
     If not, create it and return False.
 
     Parameters
     ----------
+    dir : Path
+        The directory to check.
     graph_class : str
         The graph class to check.
 
@@ -164,7 +182,14 @@ def _check_data_dir(dir: Path) -> bool:
     bool
         True if the data directory exists, False otherwise.
     """
-    return dir.exists() and dir.is_dir() and len(list(dir.iterdir())) != 0
+    if not (dir.exists() and dir.is_dir()):
+        return False
+
+    node_counts = GRAPH_CLASSES[graph_class]
+    saved_node_counts = sorted(
+        [int(f.stem) for f in dir.iterdir() if f.is_dir() and f.stem.isdigit()]
+    )
+    return saved_node_counts == node_counts
 
 
 def _save_graphs(graph_class: str, graphs: Dict[int, List[ig.Graph]]):
@@ -220,64 +245,35 @@ def _generate_nonisomorphic_graphs(
     return graphs
 
 
-def _get_sr16622_graphs() -> Dict[int, List[ig.Graph]]:
+def _download_sr_graphs(node_counts: List[int]) -> Dict[int, List[ig.Graph]]:
     """
-    Get the SR(16,6,2,2) graphs.
+    Download all strongly regular graphs of given node counts.
+
+    Parameters
+    ----------
+    node_counts : List[int]
+        List of node counts.
 
     Returns
     -------
     dict
         A dictionary of graphs, indexed by their vertex count.
     """
-    adj_matrices_str = [
-        [
-            "0111111000000000",
-            "1011000111000000",
-            "1101000000111000",
-            "1110000000000111",
-            "1000011100100100",
-            "1000101010010010",
-            "1000110001001001",
-            "0100100011100100",
-            "0100010101010010",
-            "0100001110001001",
-            "0010100100011100",
-            "0010010010101010",
-            "0010001001110001",
-            "0001100100100011",
-            "0001010010010101",
-            "0001001001001110",
-        ],
-        [
-            "0111111000000000",
-            "1011000111000000",
-            "1100100100110000",
-            "1100010010001100",
-            "1010001000101010",
-            "1001001000010101",
-            "1000110001000011",
-            "0110000001010110",
-            "0101000001101001",
-            "0100001110000011",
-            "0010100010011001",
-            "0010010100100101",
-            "0001100010100110",
-            "0001010100011010",
-            "0000101101001100",
-            "0000011011110000",
-        ],
-    ]
+    graphs = {}
+    for node_count in node_counts:
 
-    graphs = []
-    for mat_str in adj_matrices_str:
-        mat_bool = [[int(elem) for elem in list(row)] for row in mat_str]
-        graphs.append(ig.Graph.Adjacency(mat_bool, mode="undirected"))
+        link = _SR_LINKS[node_count]
 
-    return {16: graphs}
+        page_content = _download_content(link)
+        graph_list = _parse_incidence_matrices(page_content.decode("utf-8"))
+        graphs[node_count] = graph_list
+
+    return graphs
 
 
 def _download_graph6_graphs(
-    graph_class: str, node_counts=[3, 4, 5, 6, 7], use_node_count_in_url=True
+    graph_class: str,
+    node_counts: List[int] = [3, 4, 5, 6, 7],
 ) -> Dict[int, List[ig.Graph]]:
     """Download the given graph class from Brendan McKay's repository.
 
@@ -300,10 +296,8 @@ def _download_graph6_graphs(
     """
     graphs = {}
     for node_count in node_counts:
-        node_count_in_url = node_count if use_node_count_in_url else ""
         link = (
-            f"http://users.cecs.anu.edu.au/~bdm/data/"
-            f"{graph_class}{node_count_in_url}.g6"
+            f"http://users.cecs.anu.edu.au/~bdm/data/" f"{graph_class}{node_count}.g6"
         )
 
         with tempfile.TemporaryFile() as temp_file:
@@ -362,6 +356,145 @@ def _download_zipped_graphs(graph_class: str) -> Dict[int, List[ig.Graph]]:
     return graphs
 
 
+def _download_distance_regular_graphs(
+    node_counts: List[int],
+) -> Dict[int, List[ig.Graph]]:
+    """Download the given graph class from https://www.distanceregular.org/.
+
+    Parameters
+    ----------
+    node_counts : List[int]
+        The graph class to download.
+
+    Returns
+    -------
+    dict
+        A dictionary of graph lists, indexed by their vertex count.
+    """
+    graph_table = _get_dist_regular_graph_table()
+    graphs = {}
+    for node_count in node_counts:
+        links = graph_table[graph_table["No. of vertices"] == node_count]["Link"]
+        graphs[node_count] = sum([_parse_graphs_from_link(link) for link in links], [])
+
+    return graphs
+
+
+def _get_dist_regular_graph_table():
+    """Parse the distance regular graph table in https://www.distanceregular.org/.
+
+    Links in the table then will be used to download the graphs.
+
+    Returns
+    -------
+    pandas.DataFrame
+        The distance regular graph table.
+    """
+    url = "https://www.distanceregular.org/indexes/upto50vertices.html"
+    df = pd.read_html(
+        url,
+        header=0,
+        converters={
+            "No. of vertices": lambda x: int(x.replace("$", "")),
+        },
+    )[0]
+
+    page_content = _download_content(url)
+    soup = BeautifulSoup(page_content.decode("utf-8"), "lxml")
+    table = soup.find("table")
+    table_rows = table.findAll("tr")[1:]  # Omit the header
+
+    links = []
+    for row in table_rows:
+        link_cell = row.find("td")
+        link = link_cell.find("a")["href"].replace(
+            "..", "https://www.distanceregular.org"
+        )
+        links.append(link)
+
+    df["Link"] = links
+
+    return df
+
+
+def _parse_graphs_from_link(link: str) -> List[ig.Graph]:
+    """Find and read the graphs in the given page.
+
+    Parses the content of the link, finds links to adjacency matrix
+    files and reads them into igraph Graphs.
+
+    Parameters
+    ----------
+    link : str
+        The link to parse the graphs from.
+
+    Returns
+    -------
+    list
+        The parsed graphs.
+    """
+    if link == "https://www.distanceregular.org/graphs/complement-srg26.10.3.4.html":
+        # At the time of this analysis, above link was dead. We skip it explicitly.
+        return []
+
+    page_content = _download_content(link)
+    soup = BeautifulSoup(page_content.decode("utf-8"), "lxml")
+    data_links = [
+        a["href"].replace("..", "https://www.distanceregular.org")
+        for a in soup.find_all("a", text=re.compile(r"Adjacency matri(x|ces)}"))
+    ]
+
+    graphs = []
+    for data_link in data_links:
+        if data_link in [
+            "https://www.distanceregular.org/graphdata/ig-15-7-3.am",
+            "https://www.distanceregular.org/graphdata/ig-15-8-4.am",
+        ]:
+            # At the time of this analysis, above links were dead.
+            # We skip them explicitly.
+            continue
+        page_content = _download_content(data_link)
+        graph_list = _parse_incidence_matrices(page_content.decode("utf-8"))
+        graphs.extend(graph_list)
+
+    return graphs
+
+
+def _parse_incidence_matrices(incidence_matrices: str) -> List[ig.Graph]:
+    """Parse a string of incidence matrices into a list of graphs.
+
+    Parameters
+    ----------
+    incidence_matrices : str
+        The string of incidence matrices to parse.
+
+    Returns
+    -------
+    list
+        A list of graphs.
+    """
+    splitter = re.compile(r"(\r?\n){2,}")
+    graph_strings = splitter.split(incidence_matrices)
+    adj_matrices = [
+        graph_string.strip().splitlines()
+        for graph_string in graph_strings
+        if graph_string.strip()
+    ]
+
+    graphs = []
+    for mat_str in adj_matrices:
+        if len(mat_str) < 2:
+            continue
+        mat_bool = [
+            [int(elem) for elem in list(row.strip())]
+            for row in mat_str
+            if row.strip().startswith(("0", "1"))
+        ]
+        graphs.append(ig.Graph.Adjacency(mat_bool, mode="undirected"))
+
+    return graphs
+
+
 def _download_content(link: str) -> bytes:
     """Download the given link.
 
@@ -382,7 +515,7 @@ def _download_content(link: str) -> bytes:
 
     if r.status_code != 200:
         raise requests.HTTPError(
-            f"Could not download graphs from the address"
+            f"Could not download graphs from the address "
             f"{link}. HTTP error {r.status_code}"
         )
 

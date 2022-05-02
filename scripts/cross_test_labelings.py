@@ -1,5 +1,6 @@
 """Cross-test labelings with all graph classes."""
 import multiprocessing as mp
+import time
 from pathlib import Path
 
 import pandas as pd
@@ -40,9 +41,6 @@ def in_notebook():
 if in_notebook():
     classes_to_test = FAST_GRAPH_CLASSES
     methods_to_test = ALL_METHODS + [
-        ("nbhood_subgraph_comp_sizes", "burt_constraint"),
-        ("nbhood_subgraph_comp_sizes", "edge_betweenness"),
-        ("nbhood_subgraph_comp_sign", "burt_constraint"),
         ("nbhood_subgraph_comp_sign", "edge_betweenness"),
     ]
     max_graph_count = 20
@@ -51,9 +49,6 @@ if in_notebook():
 else:
     classes_to_test = GRAPH_CLASSES
     methods_to_test = ALL_METHODS + [
-        ("nbhood_subgraph_comp_sizes", "burt_constraint"),
-        ("nbhood_subgraph_comp_sizes", "edge_betweenness"),
-        ("nbhood_subgraph_comp_sign", "burt_constraint"),
         ("nbhood_subgraph_comp_sign", "edge_betweenness"),
     ]
     max_graph_count = None
@@ -105,6 +100,8 @@ def run_all_tests():
     )
     rows["Vanilla 1-WL"] = vanilla_results + [sum(vanilla_results)]
 
+    start_time = time.perf_counter()
+
     if process_count == 1:
         for method in methods_to_test:
             results = evaluate_method(
@@ -127,6 +124,8 @@ def run_all_tests():
         pool.join()
         for method, result in zip(methods_to_test, results):
             rows[method_descriptions[method]] = result + [sum(result)]
+
+    print(f"Time spent: {round(time.perf_counter() - start_time, 2)}s")
 
     results_df = pd.DataFrame.from_dict(rows, columns=columns, orient="index")
 
@@ -190,7 +189,15 @@ def run_all_tests():
         [  # create internal CSS classes
             {"selector": ".none", "props": "background-color: #cccccc;"},
             {"selector": ".best", "props": "background-color: #e6ffe6;"},
-            {"selector": ".better", "props": "background-color: #ffffe6;"},
+            {
+                "selector": ".better",
+                "props": (
+                    "background: linear-gradient(135deg, #ffffe6 25%, "
+                    "#e6ffe6 25%, #e6ffe6 50%, #ffffe6 50%, #ffffe6 75%, "
+                    "#e6ffe6 75%, #e6ffe6 100%);"
+                ),
+            },
+            {"selector": ".neutral", "props": "background-color: #ffffe6;"},
             {"selector": ".bad", "props": "background-color: #ffe6e6;"},
         ],
         overwrite=False,
@@ -201,10 +208,12 @@ def run_all_tests():
             + col.iloc[2:]
             .map(
                 lambda x: "best"
-                if x == col.iloc[2:].min()
+                if x == 0
                 else "bad"
                 if x == col.iloc[2:].max()
                 else "better"
+                if x == col.iloc[2:].min()
+                else "neutral"
             )
             .tolist(),
             index=col.index,
