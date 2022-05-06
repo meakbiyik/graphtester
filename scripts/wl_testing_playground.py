@@ -1,4 +1,4 @@
-"""Playground file for the tests."""
+"""Playground file for the WL tests."""
 import networkx as nx
 from matplotlib import pyplot as plt
 

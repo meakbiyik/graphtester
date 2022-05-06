@@ -2,7 +2,9 @@
 import multiprocessing as mp
 import time
 from pathlib import Path
+from typing import Dict, List, Tuple
 
+import igraph as ig
 import pandas as pd
 
 from graphtester import (
@@ -55,6 +57,41 @@ else:
     process_count = 4  # If 1, the multiprocessing will be disabled.
 
 
+def evaluate_and_time(
+    all_graphs: List[ig.Graph],
+    method: Tuple[str],
+    max_graph_count: int,
+    graph_pair_indices: Dict[str, List[Tuple[int, int]]],
+):
+    """Evaluate the labeling method and time it.
+
+    Parameters
+    ----------
+    all_graphs : List[ig.Graph]
+        The graphs to test.
+    method : Tuple[str]
+        The labeling method(s) to use.
+    max_graph_count : int
+        The maximum number of graphs to test.
+    graph_pair_indices : Dict[str, List[Tuple[int, int]]]
+        The indices of the graphs to test.
+
+    Returns
+    -------
+    Tuple[int, float]
+        The number of failed tests and the time spent in seconds.
+    """
+    start_time = time.perf_counter()
+    results = evaluate_method(
+        all_graphs,
+        method,
+        graph_pair_indices=graph_pair_indices,
+        max_graph_count=max_graph_count,
+    )
+    time_spent = round(time.perf_counter() - start_time, 2)
+    return results, time_spent
+
+
 def run_all_tests():
     """Run all tests for the given classes/methods.
 
@@ -80,7 +117,7 @@ def run_all_tests():
             for cls, ncounts in classes_to_test.items()
             for ncount in ncounts
         ]
-        + [("Total", "")],
+        + [("Total", ""), ("Time spent", "")],
         names=["graph_class: ", "node_count: "],
     )
 
@@ -92,29 +129,50 @@ def run_all_tests():
         for ncount in ncounts
     ]
     wl_test_counts = [int(cnt * (cnt - 1) / 2) for cnt in graph_class_sizes]
-    rows["Graph class size"] = graph_class_sizes + [sum(graph_class_sizes)]
-    rows["Test count n(n−1)/2"] = wl_test_counts + [sum(wl_test_counts)]
+    rows["Graph class size"] = graph_class_sizes + [sum(graph_class_sizes), "-"]
+    rows["Test count n(n−1)/2"] = wl_test_counts + [sum(wl_test_counts), "-"]
 
     vanilla_results, vanilla_failures = evaluate_method(
         all_graphs, "vanilla", return_failed_tests=True, max_graph_count=max_graph_count
     )
-    rows["Vanilla 1-WL"] = vanilla_results + [sum(vanilla_results)]
+    rows["Vanilla 1-WL"] = vanilla_results + [sum(vanilla_results), "-"]
 
-    start_time = time.perf_counter()
+    fwl_2_results, fwl_2_failures = evaluate_method(
+        all_graphs,
+        "vanilla",
+        test_degree=2,
+        graph_pair_indices=vanilla_failures,
+        return_failed_tests=True,
+        max_graph_count=max_graph_count,
+    )
+    rows["2-FWL"] = fwl_2_results + [sum(fwl_2_results), "-"]
+
+    fwl_3_results = evaluate_method(
+        all_graphs,
+        "vanilla",
+        test_degree=3,
+        graph_pair_indices=fwl_2_failures,
+        max_graph_count=max_graph_count,
+    )
+    rows["3-FWL"] = fwl_3_results + [sum(fwl_3_results), "-"]
 
     if process_count == 1:
         for method in methods_to_test:
-            results = evaluate_method(
+            results, time_spent = evaluate_and_time(
                 all_graphs,
                 method,
                 graph_pair_indices=vanilla_failures,
                 max_graph_count=max_graph_count,
             )
-            rows[method_descriptions[method]] = results + [sum(results)]
+            rows[method_descriptions[method]] = results + [
+                sum(results),
+                f"{time_spent}s",
+            ]
     else:
+
         pool = mp.Pool(process_count)
-        results = pool.starmap(
-            evaluate_method,
+        results_and_times = pool.starmap(
+            evaluate_and_time,
             [
                 (all_graphs, method, max_graph_count, vanilla_failures)
                 for method in methods_to_test
@@ -122,10 +180,8 @@ def run_all_tests():
         )
         pool.close()
         pool.join()
-        for method, result in zip(methods_to_test, results):
-            rows[method_descriptions[method]] = result + [sum(result)]
-
-    print(f"Time spent: {round(time.perf_counter() - start_time, 2)}s")
+        for method, (result, time_spent) in zip(methods_to_test, results_and_times):
+            rows[method_descriptions[method]] = result + [sum(result), f"{time_spent}s"]
 
     results_df = pd.DataFrame.from_dict(rows, columns=columns, orient="index")
 
@@ -219,6 +275,7 @@ def run_all_tests():
             index=col.index,
         ),
     )
+    cell_color[("Time spent", "")] = ["none"] * len(cell_color)
     s.set_td_classes(cell_color)
 
     RESULTS_DIR.mkdir(exist_ok=True)
