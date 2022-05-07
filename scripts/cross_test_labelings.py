@@ -54,7 +54,7 @@ else:
         ("nbhood_subgraph_comp_sign", "edge_betweenness"),
     ]
     max_graph_count = None
-    process_count = 4  # If 1, the multiprocessing will be disabled.
+    process_count = 16  # If 1, the multiprocessing will be disabled.
 
 
 def evaluate_and_time(
@@ -168,8 +168,8 @@ def run_all_tests():
                 sum(results),
                 f"{time_spent}s",
             ]
-    else:
 
+    else:
         pool = mp.Pool(process_count)
         results_and_times = pool.starmap(
             evaluate_and_time,
@@ -280,11 +280,13 @@ def run_all_tests():
 
     RESULTS_DIR.mkdir(exist_ok=True)
     s.to_html(
-        RESULTS_DIR / f"wl_tests_{len(classes_to_test)}.html",
+        RESULTS_DIR / f"wl_tests_{len(classes_to_test)}_{round(time.time())}.html",
         table_attributes='border="0" cellspacing="0" cellpadding="4px"',
     )
 
-    results_df.to_string(RESULTS_DIR / f"wl_tests_{len(classes_to_test)}.csv")
+    results_df.to_string(
+        RESULTS_DIR / f"wl_tests_{len(classes_to_test)}_{round(time.time())}.csv"
+    )
 
 
 if __name__ == "__main__":

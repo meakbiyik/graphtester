@@ -209,7 +209,9 @@ def _run_test(
     test_method = (
         wl_test
         if test_degree == 1
-        else lambda *args, **kwargs: kwl_test(*args, **kwargs, k=test_degree)
+        else lambda *args, **kwargs: kwl_test(
+            *args, **kwargs, k=test_degree, folklore=True
+        )
     )
 
     if labeling == ("vanilla",):
