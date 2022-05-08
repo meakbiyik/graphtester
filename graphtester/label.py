@@ -138,11 +138,15 @@ def _neighborhood_subgraph_component_signatures(graph: ig.Graph) -> List[str]:
             sorted(
                 [
                     ",".join(
-                        [str(round(b, 6)) for b in sorted(comp.edge_betweenness())]
+                        [
+                            str(round(b, 6))
+                            for b in sorted(
+                                graph.induced_subgraph(
+                                    graph.neighborhood(node_idx, mindist=1)
+                                ).edge_betweenness()
+                            )
+                        ]
                     )
-                    for comp in graph.induced_subgraph(
-                        graph.neighborhood(node_idx, mindist=1)
-                    ).decompose(mode="weak")
                 ]
             )
         )
