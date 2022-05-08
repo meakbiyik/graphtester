@@ -106,7 +106,7 @@ _SR_LINKS = {
 }
 
 
-def get_graphs(graph_class) -> Dict[int, List[ig.Graph]]:
+def get_graphs(graph_class, max_node_count=None) -> Dict[int, List[ig.Graph]]:
     """Get graphs of the given graph class, by their vertex count.
 
     If the graphs do not exist in the data folder,
@@ -116,6 +116,9 @@ def get_graphs(graph_class) -> Dict[int, List[ig.Graph]]:
     ----------
     graph_class : str
         The graph class to get.
+    max_node_count : int
+        The maximum number of nodes per graph. If None, all graphs are
+        returned.
 
     Returns
     -------
@@ -125,18 +128,14 @@ def get_graphs(graph_class) -> Dict[int, List[ig.Graph]]:
     if graph_class not in GRAPH_CLASSES:
         raise ValueError(f"Unknown graph class: {graph_class}")
 
+    if max_node_count is None:
+        max_node_count = 1e6
+
     data_subdir = _DATA_DIR / graph_class
     dir_exists = _check_data_dir(data_subdir, graph_class)
 
     if dir_exists:
-        node_counts = sorted([int(f.stem) for f in data_subdir.iterdir() if f.is_dir()])
-        graphs = {}
-        for node_count in node_counts:
-            data_subsubdir = data_subdir / str(node_count)
-            graphs[node_count] = [
-                ig.Graph.Read(str(f)) for f in data_subsubdir.iterdir()
-            ]
-        return graphs
+        return _get_graphs_from_cache(data_subdir, max_node_count)
 
     node_counts = GRAPH_CLASSES[graph_class]
 
@@ -162,7 +161,11 @@ def get_graphs(graph_class) -> Dict[int, List[ig.Graph]]:
 
     _save_graphs(graph_class, graphs)
 
-    return graphs
+    return {
+        node_count: graph_list
+        for node_count, graph_list in graphs.items()
+        if node_count <= max_node_count
+    }
 
 
 def _check_data_dir(dir: Path, graph_class: str) -> bool:
@@ -190,6 +193,35 @@ def _check_data_dir(dir: Path, graph_class: str) -> bool:
         [int(f.stem) for f in dir.iterdir() if f.is_dir() and f.stem.isdigit()]
     )
     return saved_node_counts == node_counts
+
+
+def _get_graphs_from_cache(
+    data_subdir: Path, max_node_count: int
+) -> Dict[int, List[ig.Graph]]:
+    """Get graphs from the cache.
+
+    Parameters
+    ----------
+    data_subdir : Path
+        The directory to get the graphs from.
+    max_node_count : int
+        The maximum number of nodes per graph.
+
+    Returns
+    -------
+    dict
+        A dictionary of graph lists, indexed by their vertex count.
+    """
+    node_counts = sorted([int(f.stem) for f in data_subdir.iterdir() if f.is_dir()])
+    graphs = {}
+    for node_count in node_counts:
+        if node_count <= max_node_count:
+            data_subsubdir = data_subdir / str(node_count)
+            graphs[node_count] = [
+                ig.Graph.Read(str(f)) for f in data_subsubdir.iterdir()
+            ]
+
+    return graphs
 
 
 def _save_graphs(graph_class: str, graphs: Dict[int, List[ig.Graph]]):

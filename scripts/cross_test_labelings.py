@@ -45,6 +45,7 @@ if in_notebook():
     methods_to_test = ALL_METHODS + [
         ("nbhood_subgraph_comp_sign", "edge_betweenness"),
     ]
+    max_node_count = 20
     max_graph_count = 20
     process_count = 1
 
@@ -53,8 +54,14 @@ else:
     methods_to_test = ALL_METHODS + [
         ("nbhood_subgraph_comp_sign", "edge_betweenness"),
     ]
+    max_node_count = 30
     max_graph_count = None
     process_count = 16  # If 1, the multiprocessing will be disabled.
+
+classes_to_test = {
+    graph_class: [n for n in node_counts if n <= max_node_count]
+    for graph_class, node_counts in classes_to_test.items()
+}
 
 
 def evaluate_and_time(
@@ -109,7 +116,7 @@ def run_all_tests():
         for method in methods_to_test
     }
 
-    all_graphs = {cls: get_graphs(cls) for cls in classes_to_test}
+    all_graphs = {cls: get_graphs(cls, max_node_count) for cls in classes_to_test}
 
     columns = pd.MultiIndex.from_tuples(
         [
@@ -147,16 +154,17 @@ def run_all_tests():
     )
     rows["2-FWL"] = fwl_2_results + [sum(fwl_2_results), "-"]
 
-    fwl_3_results = evaluate_method(
-        all_graphs,
-        "vanilla",
-        test_degree=3,
-        graph_pair_indices=fwl_2_failures,
-        max_graph_count=max_graph_count,
-    )
-    rows["3-FWL"] = fwl_3_results + [sum(fwl_3_results), "-"]
-
     if process_count == 1:
+
+        fwl_3_results = evaluate_method(
+            all_graphs,
+            "vanilla",
+            test_degree=3,
+            max_graph_count=max_graph_count,
+            graph_pair_indices=fwl_2_failures,
+        )
+        rows["3-FWL"] = fwl_3_results + [sum(fwl_3_results), "-"]
+
         for method in methods_to_test:
             results, time_spent = evaluate_and_time(
                 all_graphs,
@@ -170,16 +178,22 @@ def run_all_tests():
             ]
 
     else:
-        pool = mp.Pool(process_count)
-        results_and_times = pool.starmap(
-            evaluate_and_time,
-            [
-                (all_graphs, method, max_graph_count, vanilla_failures)
-                for method in methods_to_test
-            ],
-        )
-        pool.close()
-        pool.join()
+        with mp.Pool(process_count) as pool:
+            fwl_3_results_async = pool.apply_async(
+                evaluate_method,
+                (all_graphs, "vanilla", 3, max_graph_count, fwl_2_failures),
+            )
+            results_and_times = pool.starmap(
+                evaluate_and_time,
+                [
+                    (all_graphs, method, max_graph_count, vanilla_failures)
+                    for method in methods_to_test
+                ],
+            )
+            fwl_3_results = fwl_3_results_async.get()
+
+        rows["3-FWL"] = fwl_3_results + [sum(fwl_3_results), "-"]
+
         for method, (result, time_spent) in zip(methods_to_test, results_and_times):
             rows[method_descriptions[method]] = result + [sum(result), f"{time_spent}s"]
 
