@@ -1,4 +1,6 @@
 """Run 1-WL tests for given labeling methods and graph classes."""
+import os
+import time
 from typing import Dict, List, Tuple, Union
 
 import igraph as ig
@@ -61,6 +63,11 @@ def evaluate_method(
     max_graph_count = 1e12 if max_graph_count is None else max_graph_count
     labeling = (labeling,) if isinstance(labeling, str) else labeling
 
+    print_kwargs = dict(
+        src=f"Pr.{os.getpid()}-{labeling[0] if len(labeling) == 1 else labeling}",
+        silent=silent,
+    )
+
     failures = (
         {
             f"{cls}_{vcount}": []
@@ -73,9 +80,13 @@ def evaluate_method(
     result = []
 
     for cls, count_maps in graph_class_members.items():
-        _printer(f"- [{labeling}]: Testing {cls}...", silent)
+
+        _printer(msg=f"Testing graph class {cls}...", level=1, **print_kwargs)
+
         for vcount in count_maps.keys():
-            _printer(f"-- [{labeling}]: Testing {cls}_{vcount}...", silent)
+
+            _printer(msg=f"Testing {cls}_{vcount}...", level=2, **print_kwargs)
+
             graphs = graph_class_members[cls][vcount]
 
             if len(graphs) > max_graph_count:
@@ -107,8 +118,11 @@ def evaluate_method(
                 failures[f"{cls}_{vcount}"] = class_failures
 
             result.append(fail_count)
+
             _printer(
-                f"-- [{labeling}]: {cls}_{vcount}: {fail_count} failed tests", silent
+                msg=f"{cls}_{vcount}: {fail_count} failed",
+                level=2,
+                **print_kwargs,
             )
 
     if return_failed_tests:
@@ -117,9 +131,17 @@ def evaluate_method(
     return result
 
 
-def _printer(msg: str, silent: bool) -> None:
+def _printer(
+    src: str, msg: str, level: int = 0, timestamp: bool = True, silent: bool = False
+) -> None:
     if not silent:
-        print(msg)
+        print(
+            (
+                (f"{time.strftime('%H:%M:%S', time.gmtime())} " if timestamp else "")
+                + f"[{src}]{'-' * level} {msg}"
+            ),
+            flush=True,
+        )
 
 
 def _test_all_graphs(graphs: List[ig.Graph], labeling: Tuple[str], test_degree: int):
