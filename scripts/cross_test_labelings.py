@@ -48,6 +48,7 @@ if in_notebook():
     max_node_count = 20
     max_graph_count = 20
     process_count = 1
+    silent = True
 
 else:
     classes_to_test = GRAPH_CLASSES
@@ -57,6 +58,7 @@ else:
     max_node_count = 30
     max_graph_count = None
     process_count = 16  # If 1, the multiprocessing will be disabled.
+    silent = False
 
 classes_to_test = {
     graph_class: [n for n in node_counts if n <= max_node_count]
@@ -94,6 +96,7 @@ def evaluate_and_time(
         method,
         graph_pair_indices=graph_pair_indices,
         max_graph_count=max_graph_count,
+        silent=silent,
     )
     time_spent = round(time.perf_counter() - start_time, 2)
     return results, time_spent
@@ -140,7 +143,11 @@ def run_all_tests():
     rows["Test count n(n−1)/2"] = wl_test_counts + [sum(wl_test_counts), "-"]
 
     vanilla_results, vanilla_failures = evaluate_method(
-        all_graphs, "vanilla", return_failed_tests=True, max_graph_count=max_graph_count
+        all_graphs,
+        "vanilla",
+        return_failed_tests=True,
+        max_graph_count=max_graph_count,
+        silent=silent,
     )
     rows["Vanilla 1-WL"] = vanilla_results + [sum(vanilla_results), "-"]
 
@@ -151,6 +158,7 @@ def run_all_tests():
         graph_pair_indices=vanilla_failures,
         return_failed_tests=True,
         max_graph_count=max_graph_count,
+        silent=silent,
     )
     rows["2-FWL"] = fwl_2_results + [sum(fwl_2_results), "-"]
 
@@ -162,6 +170,7 @@ def run_all_tests():
             test_degree=3,
             max_graph_count=max_graph_count,
             graph_pair_indices=fwl_2_failures,
+            silent=silent,
         )
         rows["3-FWL"] = fwl_3_results + [sum(fwl_3_results), "-"]
 
@@ -181,12 +190,20 @@ def run_all_tests():
         with mp.Pool(process_count) as pool:
             fwl_3_results_async = pool.apply_async(
                 evaluate_method,
-                (all_graphs, "vanilla", 3, max_graph_count, fwl_2_failures),
+                (
+                    all_graphs,
+                    "vanilla",
+                    3,
+                    max_graph_count,
+                    fwl_2_failures,
+                    False,
+                    silent,
+                ),
             )
             results_and_times = pool.starmap(
                 evaluate_and_time,
                 [
-                    (all_graphs, method, max_graph_count, vanilla_failures)
+                    (all_graphs, method, max_graph_count, vanilla_failures, False)
                     for method in methods_to_test
                 ],
             )
