@@ -4,6 +4,8 @@ from typing import List
 
 import igraph as ig
 
+from .test import weisfeiler_lehman_hash
+
 
 def label_graph(graph: ig.Graph, methods: List[str], copy: bool = True) -> ig.Graph:
     """Deterministically label and rewire a graph.
@@ -337,6 +339,85 @@ def _determine_edge_orbits(substructure: ig.Graph) -> List[str]:
     return [orbit_hashmap[orbit] for orbit in orbits]
 
 
+def _wl_hash_vertex_label(graph: ig.Graph) -> List[str]:
+    """Label vertices by the 1-WL hash of the graph, after marking each.
+
+    Parameters
+    ----------
+    graph : ig.Graph
+        The graph to label.
+
+    Returns
+    -------
+    List[str]
+        The labels.
+    """
+    labels = []
+    for node_idx in range(graph.vcount()):
+        graph.vs["__marked"] = "0"
+        graph.vs[node_idx]["__marked"] = "1"
+        labels.append(weisfeiler_lehman_hash(graph, None, "__marked"))
+
+    del graph.vs["__marked"]
+
+    return labels
+
+
+def _wl_hash_edge_label(graph: ig.Graph) -> List[str]:
+    """Label edges by the 1-WL hash of the graph, after marking each.
+
+    Parameters
+    ----------
+    graph : ig.Graph
+        The graph to label.
+
+    Returns
+    -------
+    List[str]
+        The labels.
+    """
+    labels = []
+    for edge in graph.es:
+        graph.es["__marked"] = "0"
+        edge["__marked"] = "1"
+        labels.append(weisfeiler_lehman_hash(graph, "__marked", None))
+
+    del graph.es["__marked"]
+
+    return labels
+
+
+def _rewire_by_edge_betweenness(graph: ig.Graph):
+    """Add edge candidates with highest betweenness.
+
+    Parameters
+    ----------
+    graph : ig.Graph
+        The graph to rewire.
+
+    Returns
+    -------
+    None
+    """
+    complementer = graph.complementer(loops=False)
+    edge_betweennesses = []
+    for edge in complementer.es:
+        copy_graph = graph.copy()
+        copy_graph.add_edge(edge.source, edge.target)
+        edge_betweennesses.append(
+            round(copy_graph.edge_betweenness(directed=False)[-1], 6)
+        )
+
+    maximum_eb = max(edge_betweennesses)
+    graph.add_edges(
+        [
+            (edge.source, edge.target)
+            for edge, betw in zip(complementer.es, edge_betweennesses)
+            if betw == maximum_eb
+        ]
+    )
+
+
 SUBSTRUCTURES = {
     "3_cycle": ig.Graph.Ring(3),
     "4_cycle": ig.Graph.Ring(4),
@@ -376,6 +457,7 @@ VERTEX_LABELING_METHODS = {
     ],
     "burt_constraint": lambda g: [str(round(h, 6)) for h in g.constraint()],
     "betweenness": lambda g: [str(round(h, 6)) for h in g.betweenness()],
+    "marked_wl_hash_vertex_label": _wl_hash_vertex_label,
     "3_cycle_count_vertex": lambda g: _count_substructure_vertices(
         g, SUBSTRUCTURES["3_cycle"], SUBSTRUCTURE_VERTEX_ORBITS["3_cycle"]
     ),
@@ -422,6 +504,7 @@ EDGE_LABELING_METHODS = {
     "edge_betweenness": lambda g: [
         str(round(b, 6)) for b in g.edge_betweenness(directed=False)
     ],
+    "marked_wl_hash_edge_label": _wl_hash_edge_label,
     "3_cycle_count_edge": lambda g: _count_substructure_edges(
         g, SUBSTRUCTURES["3_cycle"], SUBSTRUCTURE_EDGE_ORBITS["3_cycle"]
     ),
@@ -460,7 +543,9 @@ EDGE_LABELING_METHODS = {
     ),
 }
 
-EDGE_REWIRING_METHODS = {}
+EDGE_REWIRING_METHODS = {
+    "rewire_by_edge_betweenness": _rewire_by_edge_betweenness,
+}
 
 ALL_METHODS = (
     list(VERTEX_LABELING_METHODS)
@@ -477,11 +562,13 @@ METHOD_DESCRIPTIONS = {
     "two_hop_neighborhood_size": "Two-hop neighborhood size",
     "burt_constraint": "Burt's constraint",
     "betweenness": "Betweenness centrality",
+    "marked_wl_hash_vertex_label": "Marked WL hash  vertex label",
     "nbhood_subgraph_comp_count": "No of neighborhood subgraph components",
     "nbhood_subgraph_comp_sizes": "Neighborhood subgraph component sizes",
     "nbhood_subgraph_comp_sign": "Neighborhood subgraph component signatures",
     "convergence_degree": "Convergence degree",
     "edge_betweenness": "Edge betweenness",
+    "marked_wl_hash_edge_label": "Marked WL hash edge label",
     "3_cycle_count_vertex": "3-cycle count of vertices",
     "4_cycle_count_vertex": "4-cycle count of vertices",
     "5_cycle_count_vertex": "5-cycle count of vertices",
@@ -506,4 +593,5 @@ METHOD_DESCRIPTIONS = {
     "4_clique_count_edge": "4-clique count of edges",
     "5_clique_count_edge": "5-clique count of edges",
     "6_clique_count_edge": "6-clique count of edges",
+    "rewire_by_edge_betweenness": "Rewire by edge betweenness",
 }

@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "random-wl-tests"
+name = "graphtester"
 version = "0.1.0"
-description = "WL-testing labeling/linking methods with randomly generated graphs"
+description = "WL-testing labeling/linking methods with a wide array of graph classes"
 authors = ["M. Eren Akbiyik <erenakbiyik@gmail.com>"]
 license = "MIT"
 packages = [
@@ -19,6 +19,8 @@ pandas = "^1.4.2"
 Jinja2 = "^3.1.1"
 lxml = "^4.8.0"
 beautifulsoup4 = "^4.11.1"
+tqdm = "^4.64.0"
+seaborn = "^0.11.2"
 
 [tool.poetry.dev-dependencies]
 pre-commit = "^2.17.0"

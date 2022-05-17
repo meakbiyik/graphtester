@@ -118,6 +118,51 @@ def k_weisfeiler_lehman_test(
     return True
 
 
+def weisfeiler_lehman_hash(
+    G: ig.Graph, edge_attr=None, node_attr=None, iterations=None
+):
+    """Apply 1-Weisfeiler Lehman (1-WL) test to create a graph hash.
+
+    Parameters
+    ----------
+    G : ig.Graph
+        The graph.
+    edge_attr : str, optional
+        The edge attribute to use for the edge labels.
+    node_attr : str, optional
+        The node attribute to use for the node labels.
+    iterations : int, optional
+        The maximum number of iterations to run. If None (default), run (n-1)
+        iterations where n is the number of vertices of inputs. See [1] for
+        more details.
+
+    Returns
+    -------
+    str
+        The hash of the graph.
+
+    References
+    ----------
+    [1] Sandra Kiefer, Power and Limits of the Weisfeiler-Leman Algorithm, 2020.
+    """
+    if iterations is None:
+        iterations = G.vcount() - 1
+
+    node_labels = _init_node_labels(G, node_attr)
+
+    for _ in range(iterations):
+
+        new_labels = _weisfeiler_lehman_step(G, node_labels, edge_attr=edge_attr)
+
+        prev_labels = node_labels
+        node_labels, _ = _reassign_labels(new_labels, new_labels)
+
+        if node_labels == prev_labels:
+            break
+
+    return "".join(sorted(node_labels))
+
+
 def _init_k_tuple_labels(
     G: ig.Graph, k: int, node_attr: str, edge_attr: str
 ) -> List[str]:
@@ -153,7 +198,7 @@ def _init_k_tuple_labels(
         # coloring for edges and vertices.
         # See http://www.tcs.hut.fi/Software/bliss/index.html for
         # more information about the BLISS algorithm and canonical permutations.
-        G = G.permute_vertices(G.canonical_permutation(G))
+        G = G.permute_vertices(G.canonical_permutation())
 
     k_vertex_tuple_generator = itertools.product(range(G.vcount()), repeat=k)
     isoclass = (
@@ -373,7 +418,7 @@ def _reassign_labels(labels_g1, labels_g2) -> bool:
     List[str]
         The new labels of the second graph.
     """
-    all_labels = set(labels_g1 + labels_g2)
+    all_labels = set(sorted(labels_g1 + labels_g2))
     label_map = {label: str(i) for i, label in enumerate(all_labels)}
 
     new_labels_g1 = [label_map[label] for label in labels_g1]

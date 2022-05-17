@@ -13,6 +13,10 @@ from graphtester.produce import (
     GRAPH_CLASSES,
     get_graphs,
 )
-from graphtester.test import k_weisfeiler_lehman_test, weisfeiler_lehman_test
+from graphtester.test import (
+    k_weisfeiler_lehman_test,
+    weisfeiler_lehman_hash,
+    weisfeiler_lehman_test,
+)
 
 from graphtester.evaluate import evaluate_method  # isort:skip
