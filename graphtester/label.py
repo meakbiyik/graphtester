@@ -67,8 +67,8 @@ def label_graph(graph: ig.Graph, methods: List[str], copy: bool = True) -> ig.Gr
     return graph
 
 
-def _neighborhood_subgraph_component_count(graph: ig.Graph) -> List[str]:
-    """Compute the number of components in each neighborhood subgraph.
+def _local_graph_component_count(graph: ig.Graph) -> List[str]:
+    """Compute the number of components in each first subconstituent.
 
     Parameters
     ----------
@@ -92,8 +92,8 @@ def _neighborhood_subgraph_component_count(graph: ig.Graph) -> List[str]:
     ]
 
 
-def _neighborhood_subgraph_component_sizes(graph: ig.Graph) -> List[str]:
-    """Compute the sizes of components in each neighborhood subgraph.
+def _local_graph_component_sizes(graph: ig.Graph) -> List[str]:
+    """Compute the sizes of components in each first subconstituent.
 
     Parameters
     ----------
@@ -532,8 +532,8 @@ VERTEX_LABELING_METHODS = {
     "6-clique count of vertices": lambda g: _count_substructure_vertices(
         g, SUBSTRUCTURES["6_clique"], SUBSTRUCTURE_VERTEX_ORBITS["6_clique"]
     ),
-    "No of neighborhood subgraph components": _neighborhood_subgraph_component_count,
-    "Neighborhood 1st subconstituent sizes": _neighborhood_subgraph_component_sizes,
+    "Local graph component count": _local_graph_component_count,
+    "Local graph component sizes": _local_graph_component_sizes,
     "Neighborhood 1st subconstituent signatures": _neighborhood_1st_subconst_sign,
     "Neighborhood 2nd subconstituent signatures": _neighborhood_2nd_subconst_sign,
 }

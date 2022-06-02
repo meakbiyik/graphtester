@@ -24,14 +24,14 @@ print(
     f"2-FWL test: {'failed' if kwl_test(g1, g2, k=2, folklore=True) else 'succeeded'}"
 )
 
-labeled_g1 = label_graph(g1, ["nbhood_subgraph_comp_sign"])
-labeled_g2 = label_graph(g2, ["nbhood_subgraph_comp_sign"])
+labeled_g1 = label_graph(g1, ["Neighborhood 1st subconstituent signatures"])
+labeled_g2 = label_graph(g2, ["Neighborhood 1st subconstituent signatures"])
 # Test (and again fail)
 labeled_wl_test = wl_test(labeled_g1, labeled_g2, "label", "label")
 print(f"1-WL test with signatures: " f"{'failed' if labeled_wl_test else 'succeeded'}")
 
-labeled_g1 = label_graph(g1, ["nbhood_subgraph_comp_sign_2"])
-labeled_g2 = label_graph(g2, ["nbhood_subgraph_comp_sign_2"])
+labeled_g1 = label_graph(g1, ["Neighborhood 2nd subconstituent signatures"])
+labeled_g2 = label_graph(g2, ["Neighborhood 2nd subconstituent signatures"])
 # Test (and again fail)
 labeled_wl_test = wl_test(labeled_g1, labeled_g2, "label", "label")
 print(
@@ -75,14 +75,14 @@ print(
     f"3-FWL test: {'failed' if kwl_test(g1, g2, k=3, folklore=True) else 'succeeded'}"
 )
 
-labeled_g1 = label_graph(g1, ["nbhood_subgraph_comp_sign"])
-labeled_g2 = label_graph(g2, ["nbhood_subgraph_comp_sign"])
+labeled_g1 = label_graph(g1, ["Neighborhood 1st subconstituent signatures"])
+labeled_g2 = label_graph(g2, ["Neighborhood 1st subconstituent signatures"])
 # Test (and again fail)
 labeled_wl_test = wl_test(labeled_g1, labeled_g2, "label", "label")
 print(f"1-WL test with signatures: " f"{'failed' if labeled_wl_test else 'succeeded'}")
 
-labeled_g1 = label_graph(g1, ["nbhood_subgraph_comp_sign_2"])
-labeled_g2 = label_graph(g2, ["nbhood_subgraph_comp_sign_2"])
+labeled_g1 = label_graph(g1, ["Neighborhood 2nd subconstituent signatures"])
+labeled_g2 = label_graph(g2, ["Neighborhood 2nd subconstituent signatures"])
 # Test (and again fail)
 labeled_wl_test = wl_test(labeled_g1, labeled_g2, "label", "label")
 print(

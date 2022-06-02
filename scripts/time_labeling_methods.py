@@ -13,13 +13,13 @@ RESULTS_DIR = Path(__file__).parents[1] / "results"
 
 classes = ["all", "highlyirregular", "strongly_regular"]
 methods = [
-    ("nbhood_subgraph_comp_sign", "edge_betweenness"),
-    ("4_path_count_edge",),
-    ("5_path_count_edge",),
-    ("6_path_count_edge",),
-    ("4_clique_count_edge",),
-    ("5_clique_count_edge",),
-    ("6_clique_count_edge",),
+    ("Neighborhood 1st subconstituent signatures", "Edge betweenness"),
+    ("4-path count of edges",),
+    ("5-path count of edges",),
+    ("6-path count of edges",),
+    ("4-clique count of edges",),
+    ("5-clique count of edges",),
+    ("6-clique count of edges",),
 ]
 times = []
 

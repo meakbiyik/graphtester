@@ -42,7 +42,7 @@ def in_notebook():
 if in_notebook():
     classes_to_test = FAST_GRAPH_CLASSES
     methods_to_test = ALL_METHODS + [
-        ("nbhood_1st_subconst_sign", "edge_betweenness"),
+        ("Neighborhood 1st subconstituent signatures", "Edge betweenness"),
     ]
     max_node_count = 20
     max_graph_count = 20
@@ -53,7 +53,7 @@ if in_notebook():
 else:
     classes_to_test = GRAPH_CLASSES
     methods_to_test = ALL_METHODS + [
-        ("nbhood_1st_subconst_sign", "edge_betweenness"),
+        ("Neighborhood 1st subconstituent signatures", "Edge betweenness"),
     ]
     max_node_count = 40
     max_graph_count = None
@@ -114,7 +114,7 @@ def run_all_tests():
     print(methods_to_test)
 
     method_descriptions = {
-        method if isinstance(method, str) else " + ".join(method)
+        method: method if isinstance(method, str) else " + ".join(method)
         for method in methods_to_test
     }
 
