@@ -12,7 +12,6 @@ from graphtester import (
     FAST_GRAPH_CLASSES,
     GRAPH_CLASS_DESCRIPTIONS,
     GRAPH_CLASSES,
-    METHOD_DESCRIPTIONS,
     evaluate_method,
     get_graphs,
 )
@@ -43,20 +42,22 @@ def in_notebook():
 if in_notebook():
     classes_to_test = FAST_GRAPH_CLASSES
     methods_to_test = ALL_METHODS + [
-        ("nbhood_subgraph_comp_sign", "edge_betweenness"),
+        ("nbhood_1st_subconst_sign", "edge_betweenness"),
     ]
     max_node_count = 20
     max_graph_count = 20
+    skip_3fwl = True
     process_count = 1
     silent = True
 
 else:
     classes_to_test = GRAPH_CLASSES
     methods_to_test = ALL_METHODS + [
-        ("nbhood_subgraph_comp_sign", "edge_betweenness"),
+        ("nbhood_1st_subconst_sign", "edge_betweenness"),
     ]
-    max_node_count = 30
+    max_node_count = 40
     max_graph_count = None
+    skip_3fwl = True
     process_count = 16  # If 1, the multiprocessing will be disabled.
     silent = False
 
@@ -113,9 +114,7 @@ def run_all_tests():
     print(methods_to_test)
 
     method_descriptions = {
-        method: METHOD_DESCRIPTIONS[method]
-        if isinstance(method, str)
-        else " + ".join(METHOD_DESCRIPTIONS[m] for m in method)
+        method if isinstance(method, str) else " + ".join(method)
         for method in methods_to_test
     }
 
@@ -164,15 +163,16 @@ def run_all_tests():
 
     if process_count == 1:
 
-        fwl_3_results = evaluate_method(
-            all_graphs,
-            "vanilla",
-            test_degree=3,
-            max_graph_count=max_graph_count,
-            graph_pair_indices=fwl_2_failures,
-            silent=silent,
-        )
-        rows["3-FWL"] = fwl_3_results + [sum(fwl_3_results), "-"]
+        if not skip_3fwl:
+            fwl_3_results = evaluate_method(
+                all_graphs,
+                "vanilla",
+                test_degree=3,
+                max_graph_count=max_graph_count,
+                graph_pair_indices=fwl_2_failures,
+                silent=silent,
+            )
+            rows["3-FWL"] = fwl_3_results + [sum(fwl_3_results), "-"]
 
         for method in methods_to_test:
             results, time_spent = evaluate_and_time(
@@ -187,29 +187,41 @@ def run_all_tests():
             ]
 
     else:
-        with mp.Pool(process_count) as pool:
-            fwl_3_results_async = pool.apply_async(
-                evaluate_method,
-                (
-                    all_graphs,
-                    "vanilla",
-                    3,
-                    max_graph_count,
-                    fwl_2_failures,
-                    False,
-                    silent,
-                ),
-            )
-            results_and_times = pool.starmap(
-                evaluate_and_time,
-                [
-                    (all_graphs, method, max_graph_count, vanilla_failures, False)
-                    for method in methods_to_test
-                ],
-            )
-            fwl_3_results = fwl_3_results_async.get()
 
-        rows["3-FWL"] = fwl_3_results + [sum(fwl_3_results), "-"]
+        if not skip_3fwl:
+            with mp.Pool(process_count) as pool:
+                fwl_3_results_async = pool.apply_async(
+                    evaluate_method,
+                    (
+                        all_graphs,
+                        "vanilla",
+                        3,
+                        max_graph_count,
+                        fwl_2_failures,
+                        False,
+                        silent,
+                    ),
+                )
+                results_and_times = pool.starmap(
+                    evaluate_and_time,
+                    [
+                        (all_graphs, method, max_graph_count, vanilla_failures, False)
+                        for method in methods_to_test
+                    ],
+                )
+                fwl_3_results = fwl_3_results_async.get()
+
+            rows["3-FWL"] = fwl_3_results + [sum(fwl_3_results), "-"]
+
+        else:
+            with mp.Pool(process_count) as pool:
+                results_and_times = pool.starmap(
+                    evaluate_and_time,
+                    [
+                        (all_graphs, method, max_graph_count, vanilla_failures, False)
+                        for method in methods_to_test
+                    ],
+                )
 
         for method, (result, time_spent) in zip(methods_to_test, results_and_times):
             rows[method_descriptions[method]] = result + [sum(result), f"{time_spent}s"]

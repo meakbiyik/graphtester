@@ -155,7 +155,7 @@ def weisfeiler_lehman_hash(
         new_labels = _weisfeiler_lehman_step(G, node_labels, edge_attr=edge_attr)
 
         prev_labels = node_labels
-        node_labels, _ = _reassign_labels(new_labels, new_labels)
+        node_labels = _reassign_labels(new_labels)
 
         if node_labels == prev_labels:
             break
@@ -401,14 +401,14 @@ def _aggregate_neighborhood(G: ig.Graph, node_idx, node_labels, edge_attr=None):
     return node_labels[node_idx] + "".join(sorted(label_list))
 
 
-def _reassign_labels(labels_g1, labels_g2) -> bool:
+def _reassign_labels(labels_g1, labels_g2=None) -> bool:
     """Reassign the labels of the nodes or node tuples in the graphs.
 
     Parameters
     ----------
     labels_g1 : List[str]
         The labels of the first graph.
-    labels_g2 : List[str]
+    labels_g2 : List[str], optional
         The labels of the second graph.
 
     Returns
@@ -416,12 +416,18 @@ def _reassign_labels(labels_g1, labels_g2) -> bool:
     List[str]
         The new labels of the first graph.
     List[str]
-        The new labels of the second graph.
+        The new labels of the second graph, only present if labels_g2 is not None.
     """
+    if labels_g2 is None:
+        labels_g2 = []
+
     all_labels = set(sorted(labels_g1 + labels_g2))
     label_map = {label: str(i) for i, label in enumerate(all_labels)}
 
     new_labels_g1 = [label_map[label] for label in labels_g1]
     new_labels_g2 = [label_map[label] for label in labels_g2]
 
-    return new_labels_g1, new_labels_g2
+    if labels_g2:
+        return new_labels_g1, new_labels_g2
+
+    return new_labels_g1

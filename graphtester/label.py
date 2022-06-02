@@ -120,8 +120,8 @@ def _neighborhood_subgraph_component_sizes(graph: ig.Graph) -> List[str]:
     ]
 
 
-def _neighborhood_subgraph_component_signatures(graph: ig.Graph) -> List[str]:
-    """Compute the WL signatures of components in each neighborhood subgraph.
+def _neighborhood_1st_subconst_sign(graph: ig.Graph) -> List[str]:
+    """Compute the WL signatures of each node using 1st subconstituents.
 
     Uses edge betweenness to create a signature.
 
@@ -145,6 +145,42 @@ def _neighborhood_subgraph_component_signatures(graph: ig.Graph) -> List[str]:
                             for b in sorted(
                                 graph.induced_subgraph(
                                     graph.neighborhood(node_idx, mindist=1)
+                                ).edge_betweenness()
+                            )
+                        ]
+                    )
+                ]
+            )
+        )
+        for node_idx in range(graph.vcount())
+    ]
+
+
+def _neighborhood_2nd_subconst_sign(graph: ig.Graph) -> List[str]:
+    """Compute the WL signatures of each node using 2nd subconstituents.
+
+    Uses edge betweenness to create a signature.
+
+    Parameters
+    ----------
+    graph : ig.Graph
+        The graph to label.
+
+    Returns
+    -------
+    List[str]
+        The labels.
+    """
+    return [
+        ";".join(
+            sorted(
+                [
+                    ",".join(
+                        [
+                            str(round(b, 6))
+                            for b in sorted(
+                                graph.induced_subgraph(
+                                    graph.neighborhood(node_idx, mindist=2, order=2)
                                 ).edge_betweenness()
                             )
                         ]
@@ -445,106 +481,109 @@ SUBSTRUCTURE_EDGE_ORBITS = {
 
 
 VERTEX_LABELING_METHODS = {
-    "eigenvector": lambda g: [str(round(h, 6)) for h in g.evcent()],
-    "eccentricity": lambda g: [str(round(h, 6)) for h in g.eccentricity()],
-    "local_transitivity": lambda g: [
+    "Eigenvector centrality": lambda g: [str(round(h, 6)) for h in g.evcent()],
+    "Eccentricity": lambda g: [str(round(h, 6)) for h in g.eccentricity()],
+    "Local transitivity": lambda g: [
         str(round(h, 6)) for h in g.transitivity_local_undirected(mode="zero")
     ],
-    "harmonic": lambda g: [str(round(h, 6)) for h in g.harmonic_centrality()],
-    "closeness": lambda g: [str(round(h, 6)) for h in g.closeness()],
-    "two_hop_neighborhood_size": lambda g: [
+    "Harmonic centrality": lambda g: [
+        str(round(h, 6)) for h in g.harmonic_centrality()
+    ],
+    "Closeness centrality": lambda g: [str(round(h, 6)) for h in g.closeness()],
+    "Two-hop neighborhood size": lambda g: [
         str(round(h, 6)) for h in g.neighborhood_size(order=2)
     ],
-    "burt_constraint": lambda g: [str(round(h, 6)) for h in g.constraint()],
-    "betweenness": lambda g: [str(round(h, 6)) for h in g.betweenness()],
-    "marked_wl_hash_vertex_label": _wl_hash_vertex_label,
-    "3_cycle_count_vertex": lambda g: _count_substructure_vertices(
+    "Burt's constraint": lambda g: [str(round(h, 6)) for h in g.constraint()],
+    "Betweenness centrality": lambda g: [str(round(h, 6)) for h in g.betweenness()],
+    "Marked WL hash  vertex label": _wl_hash_vertex_label,
+    "3-cycle count of vertices": lambda g: _count_substructure_vertices(
         g, SUBSTRUCTURES["3_cycle"], SUBSTRUCTURE_VERTEX_ORBITS["3_cycle"]
     ),
-    "4_cycle_count_vertex": lambda g: _count_substructure_vertices(
+    "4-cycle count of vertices": lambda g: _count_substructure_vertices(
         g, SUBSTRUCTURES["4_cycle"], SUBSTRUCTURE_VERTEX_ORBITS["4_cycle"]
     ),
-    "5_cycle_count_vertex": lambda g: _count_substructure_vertices(
+    "5-cycle count of vertices": lambda g: _count_substructure_vertices(
         g, SUBSTRUCTURES["5_cycle"], SUBSTRUCTURE_VERTEX_ORBITS["5_cycle"]
     ),
-    "6_cycle_count_vertex": lambda g: _count_substructure_vertices(
+    "6-cycle count of vertices": lambda g: _count_substructure_vertices(
         g, SUBSTRUCTURES["6_cycle"], SUBSTRUCTURE_VERTEX_ORBITS["6_cycle"]
     ),
-    "3_path_count_vertex": lambda g: _count_substructure_vertices(
+    "3-path count of vertices": lambda g: _count_substructure_vertices(
         g, SUBSTRUCTURES["3_path"], SUBSTRUCTURE_VERTEX_ORBITS["3_path"]
     ),
-    "4_path_count_vertex": lambda g: _count_substructure_vertices(
+    "4-path count of vertices": lambda g: _count_substructure_vertices(
         g, SUBSTRUCTURES["4_path"], SUBSTRUCTURE_VERTEX_ORBITS["4_path"]
     ),
-    "5_path_count_vertex": lambda g: _count_substructure_vertices(
+    "5-path count of vertices": lambda g: _count_substructure_vertices(
         g, SUBSTRUCTURES["5_path"], SUBSTRUCTURE_VERTEX_ORBITS["5_path"]
     ),
-    "6_path_count_vertex": lambda g: _count_substructure_vertices(
+    "6-path count of vertices": lambda g: _count_substructure_vertices(
         g, SUBSTRUCTURES["6_path"], SUBSTRUCTURE_VERTEX_ORBITS["6_path"]
     ),
-    "3_clique_count_vertex": lambda g: _count_substructure_vertices(
+    "3-clique count of vertices": lambda g: _count_substructure_vertices(
         g, SUBSTRUCTURES["3_clique"], SUBSTRUCTURE_VERTEX_ORBITS["3_clique"]
     ),
-    "4_clique_count_vertex": lambda g: _count_substructure_vertices(
+    "4-clique count of vertices": lambda g: _count_substructure_vertices(
         g, SUBSTRUCTURES["4_clique"], SUBSTRUCTURE_VERTEX_ORBITS["4_clique"]
     ),
-    "5_clique_count_vertex": lambda g: _count_substructure_vertices(
+    "5-clique count of vertices": lambda g: _count_substructure_vertices(
         g, SUBSTRUCTURES["5_clique"], SUBSTRUCTURE_VERTEX_ORBITS["5_clique"]
     ),
-    "6_clique_count_vertex": lambda g: _count_substructure_vertices(
+    "6-clique count of vertices": lambda g: _count_substructure_vertices(
         g, SUBSTRUCTURES["6_clique"], SUBSTRUCTURE_VERTEX_ORBITS["6_clique"]
     ),
-    "nbhood_subgraph_comp_count": _neighborhood_subgraph_component_count,
-    "nbhood_subgraph_comp_sizes": _neighborhood_subgraph_component_sizes,
-    "nbhood_subgraph_comp_sign": _neighborhood_subgraph_component_signatures,
+    "No of neighborhood subgraph components": _neighborhood_subgraph_component_count,
+    "Neighborhood 1st subconstituent sizes": _neighborhood_subgraph_component_sizes,
+    "Neighborhood 1st subconstituent signatures": _neighborhood_1st_subconst_sign,
+    "Neighborhood 2nd subconstituent signatures": _neighborhood_2nd_subconst_sign,
 }
 
 EDGE_LABELING_METHODS = {
-    "convergence_degree": lambda g: [str(round(h, 6)) for h in g.convergence_degree()],
-    "edge_betweenness": lambda g: [
+    "Convergence degree": lambda g: [str(round(h, 6)) for h in g.convergence_degree()],
+    "Edge betweenness": lambda g: [
         str(round(b, 6)) for b in g.edge_betweenness(directed=False)
     ],
-    "marked_wl_hash_edge_label": _wl_hash_edge_label,
-    "3_cycle_count_edge": lambda g: _count_substructure_edges(
+    "Marked WL hash edge label": _wl_hash_edge_label,
+    "3-cycle count of edges": lambda g: _count_substructure_edges(
         g, SUBSTRUCTURES["3_cycle"], SUBSTRUCTURE_EDGE_ORBITS["3_cycle"]
     ),
-    "4_cycle_count_edge": lambda g: _count_substructure_edges(
+    "4-cycle count of edges": lambda g: _count_substructure_edges(
         g, SUBSTRUCTURES["4_cycle"], SUBSTRUCTURE_EDGE_ORBITS["4_cycle"]
     ),
-    "5_cycle_count_edge": lambda g: _count_substructure_edges(
+    "5-cycle count of edges": lambda g: _count_substructure_edges(
         g, SUBSTRUCTURES["5_cycle"], SUBSTRUCTURE_EDGE_ORBITS["5_cycle"]
     ),
-    "6_cycle_count_edge": lambda g: _count_substructure_edges(
+    "6-cycle count of edges": lambda g: _count_substructure_edges(
         g, SUBSTRUCTURES["6_cycle"], SUBSTRUCTURE_EDGE_ORBITS["6_cycle"]
     ),
-    "3_path_count_edge": lambda g: _count_substructure_edges(
+    "3-path count of edges": lambda g: _count_substructure_edges(
         g, SUBSTRUCTURES["3_path"], SUBSTRUCTURE_EDGE_ORBITS["3_path"]
     ),
-    "4_path_count_edge": lambda g: _count_substructure_edges(
+    "4-path count of edges": lambda g: _count_substructure_edges(
         g, SUBSTRUCTURES["4_path"], SUBSTRUCTURE_EDGE_ORBITS["4_path"]
     ),
-    "5_path_count_edge": lambda g: _count_substructure_edges(
+    "5-path count of edges": lambda g: _count_substructure_edges(
         g, SUBSTRUCTURES["5_path"], SUBSTRUCTURE_EDGE_ORBITS["5_path"]
     ),
-    "6_path_count_edge": lambda g: _count_substructure_edges(
+    "6-path count of edges": lambda g: _count_substructure_edges(
         g, SUBSTRUCTURES["6_path"], SUBSTRUCTURE_EDGE_ORBITS["6_path"]
     ),
-    "3_clique_count_edge": lambda g: _count_substructure_edges(
+    "3-clique count of edges": lambda g: _count_substructure_edges(
         g, SUBSTRUCTURES["3_clique"], SUBSTRUCTURE_EDGE_ORBITS["3_clique"]
     ),
-    "4_clique_count_edge": lambda g: _count_substructure_edges(
+    "4-clique count of edges": lambda g: _count_substructure_edges(
         g, SUBSTRUCTURES["4_clique"], SUBSTRUCTURE_EDGE_ORBITS["4_clique"]
     ),
-    "5_clique_count_edge": lambda g: _count_substructure_edges(
+    "5-clique count of edges": lambda g: _count_substructure_edges(
         g, SUBSTRUCTURES["5_clique"], SUBSTRUCTURE_EDGE_ORBITS["5_clique"]
     ),
-    "6_clique_count_edge": lambda g: _count_substructure_edges(
+    "6-clique count of edges": lambda g: _count_substructure_edges(
         g, SUBSTRUCTURES["6_clique"], SUBSTRUCTURE_EDGE_ORBITS["6_clique"]
     ),
 }
 
 EDGE_REWIRING_METHODS = {
-    "rewire_by_edge_betweenness": _rewire_by_edge_betweenness,
+    "Rewire by edge betweenness": _rewire_by_edge_betweenness,
 }
 
 ALL_METHODS = (
@@ -552,46 +591,3 @@ ALL_METHODS = (
     + list(EDGE_LABELING_METHODS)
     + list(EDGE_REWIRING_METHODS)
 )
-
-METHOD_DESCRIPTIONS = {
-    "eigenvector": "Eigenvector centrality",
-    "eccentricity": "Eccentricity",
-    "local_transitivity": "Local transitivity",
-    "harmonic": "Harmonic centrality",
-    "closeness": "Closeness centrality",
-    "two_hop_neighborhood_size": "Two-hop neighborhood size",
-    "burt_constraint": "Burt's constraint",
-    "betweenness": "Betweenness centrality",
-    "marked_wl_hash_vertex_label": "Marked WL hash  vertex label",
-    "nbhood_subgraph_comp_count": "No of neighborhood subgraph components",
-    "nbhood_subgraph_comp_sizes": "Neighborhood subgraph component sizes",
-    "nbhood_subgraph_comp_sign": "Neighborhood subgraph component signatures",
-    "convergence_degree": "Convergence degree",
-    "edge_betweenness": "Edge betweenness",
-    "marked_wl_hash_edge_label": "Marked WL hash edge label",
-    "3_cycle_count_vertex": "3-cycle count of vertices",
-    "4_cycle_count_vertex": "4-cycle count of vertices",
-    "5_cycle_count_vertex": "5-cycle count of vertices",
-    "6_cycle_count_vertex": "6-cycle count of vertices",
-    "3_path_count_vertex": "3-path count of vertices",
-    "4_path_count_vertex": "4-path count of vertices",
-    "5_path_count_vertex": "5-path count of vertices",
-    "6_path_count_vertex": "6-path count of vertices",
-    "3_clique_count_vertex": "3-clique count of vertices",
-    "4_clique_count_vertex": "4-clique count of vertices",
-    "5_clique_count_vertex": "5-clique count of vertices",
-    "6_clique_count_vertex": "6-clique count of vertices",
-    "3_cycle_count_edge": "3-cycle count of edges",
-    "4_cycle_count_edge": "4-cycle count of edges",
-    "5_cycle_count_edge": "5-cycle count of edges",
-    "6_cycle_count_edge": "6-cycle count of edges",
-    "3_path_count_edge": "3-path count of edges",
-    "4_path_count_edge": "4-path count of edges",
-    "5_path_count_edge": "5-path count of edges",
-    "6_path_count_edge": "6-path count of edges",
-    "3_clique_count_edge": "3-clique count of edges",
-    "4_clique_count_edge": "4-clique count of edges",
-    "5_clique_count_edge": "5-clique count of edges",
-    "6_clique_count_edge": "6-clique count of edges",
-    "rewire_by_edge_betweenness": "Rewire by edge betweenness",
-}

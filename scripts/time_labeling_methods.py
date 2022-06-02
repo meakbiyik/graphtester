@@ -7,12 +7,7 @@ import seaborn as sns
 import tqdm
 from matplotlib import pyplot as plt
 
-from graphtester import (
-    GRAPH_CLASS_DESCRIPTIONS,
-    METHOD_DESCRIPTIONS,
-    get_graphs,
-    label_graph,
-)
+from graphtester import GRAPH_CLASS_DESCRIPTIONS, get_graphs, label_graph
 
 RESULTS_DIR = Path(__file__).parents[1] / "results"
 
@@ -39,7 +34,7 @@ for cls in classes:
                     {
                         "graph_class": GRAPH_CLASS_DESCRIPTIONS[cls],
                         "node_count": node_count,
-                        "labeling": " + ".join(METHOD_DESCRIPTIONS[m] for m in method),
+                        "labeling": " + ".join(method),
                         "time": time,
                     }
                 )

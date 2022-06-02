@@ -3,7 +3,6 @@ from graphtester.label import (
     ALL_METHODS,
     EDGE_LABELING_METHODS,
     EDGE_REWIRING_METHODS,
-    METHOD_DESCRIPTIONS,
     VERTEX_LABELING_METHODS,
     label_graph,
 )
