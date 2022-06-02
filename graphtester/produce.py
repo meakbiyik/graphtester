@@ -44,12 +44,12 @@ _DATA_DIR = Path(__file__).parents[1] / "data"
 GRAPH_CLASSES = {
     "all": [3, 4, 5, 6, 7],
     "eul": [3, 4, 5, 6, 7, 8, 9],
-    "planar_conn": [3, 4, 5, 6, 7],
-    "chordal": [4, 5, 6, 7, 8],
-    "perfect": [5, 6, 7],
+    "planar_conn": [3, 4, 5, 6, 7, 8],
+    "chordal": [4, 5, 6, 7, 8, 9],
+    "perfect": [5, 6, 7, 8],
     "highlyirregular": [8, 9, 10, 11, 12, 13],
     "crit4": [7, 8, 9, 10, 11],
-    "selfcomp": [5, 8, 9, 12],
+    "selfcomp": [5, 8, 9, 12, 13],
     "strongly_regular": [16, 25, 26, 28, 29, 36, 40, 45, 50, 64],
     # fmt: off
     "distance_regular": [

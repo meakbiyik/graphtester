@@ -205,7 +205,7 @@ def run_all_tests():
                 results_and_times = pool.starmap(
                     evaluate_and_time,
                     [
-                        (all_graphs, method, max_graph_count, vanilla_failures, False)
+                        (all_graphs, method, max_graph_count, vanilla_failures)
                         for method in methods_to_test
                     ],
                 )
@@ -218,7 +218,7 @@ def run_all_tests():
                 results_and_times = pool.starmap(
                     evaluate_and_time,
                     [
-                        (all_graphs, method, max_graph_count, vanilla_failures, False)
+                        (all_graphs, method, max_graph_count, vanilla_failures)
                         for method in methods_to_test
                     ],
                 )
