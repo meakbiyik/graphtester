@@ -42,7 +42,7 @@ from bs4 import BeautifulSoup
 _DATA_DIR = Path(__file__).parents[1] / "data"
 
 GRAPH_CLASSES = {
-    "all": [3, 4, 5, 6, 7],
+    "all": [3, 4, 5, 6, 7, 8],
     "eul": [3, 4, 5, 6, 7, 8, 9],
     "planar_conn": [3, 4, 5, 6, 7, 8],
     "chordal": [4, 5, 6, 7, 8, 9],
@@ -89,6 +89,7 @@ _ISOCLASS_SIZES = {
     5: 34,
     6: 156,
     7: 1044,
+    8: 12346,
 }
 
 _SR_LINKS = {
@@ -260,13 +261,13 @@ def _generate_nonisomorphic_graphs(
     list
         A list of graphs.
     """
-    if node_count < 3 or node_count > 7:
-        raise ValueError(f"Node count must be between 3 and 7, got {node_count}")
+    if node_count < 3 or node_count > 8:
+        raise ValueError(f"Node count must be between 3 and 8, got {node_count}")
 
     class_size = _ISOCLASS_SIZES[node_count]
 
-    if node_count == 7:
-        graphs = _download_graph6_graphs("graph", [7])[7]
+    if node_count >= 7:
+        graphs = _download_graph6_graphs("graph", [node_count])[node_count]
 
     else:
         # Just use the precomputed Isomorphism classes
