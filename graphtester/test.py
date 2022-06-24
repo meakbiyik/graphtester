@@ -398,7 +398,7 @@ def _aggregate_neighborhood(G: ig.Graph, node_idx, node_labels, edge_attr=None):
     else:
         label_list = [node_labels[nbr] for nbr in G.neighbors(node_idx)]
 
-    return node_labels[node_idx] + "".join(sorted(label_list))
+    return node_labels[node_idx] + ",".join(sorted(label_list))
 
 
 def _reassign_labels(labels_g1, labels_g2=None) -> bool:
