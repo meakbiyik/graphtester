@@ -4,7 +4,11 @@ from typing import List
 
 import igraph as ig
 
-from .test import weisfeiler_lehman_hash
+from graphtester.test import (
+    _init_node_labels,
+    _weisfeiler_lehman_step,
+    weisfeiler_lehman_hash,
+)
 
 
 def label_graph(graph: ig.Graph, methods: List[str], copy: bool = True) -> ig.Graph:
@@ -454,6 +458,30 @@ def _rewire_by_edge_betweenness(graph: ig.Graph):
     )
 
 
+def _edge_feature_embedder(graph: ig.Graph, edge_features: List[str]) -> List[str]:
+    """Embed edge features as node features by running 1-WL for one step.
+
+    Parameters
+    ----------
+    graph : ig.Graph
+        The graph to label.
+    edge_features : List[str]
+        The edge features to embed.
+
+    Returns
+    -------
+    List[str]
+        The node labels.
+    """
+    graph_copy = graph.copy()
+    graph_copy.es["__edge_features"] = edge_features
+    initial_node_labels = _init_node_labels(graph_copy, None)
+    node_labels = _weisfeiler_lehman_step(
+        graph_copy, initial_node_labels, edge_attr="__edge_features"
+    )
+    return node_labels
+
+
 SUBSTRUCTURES = {
     "3_cycle": ig.Graph.Ring(3),
     "4_cycle": ig.Graph.Ring(4),
@@ -536,6 +564,18 @@ VERTEX_LABELING_METHODS = {
     "Local graph component sizes": _local_graph_component_sizes,
     "Neighborhood 1st subconstituent signatures": _neighborhood_1st_subconst_sign,
     "Neighborhood 2nd subconstituent signatures": _neighborhood_2nd_subconst_sign,
+    "Convergence degree as node label": lambda g: _edge_feature_embedder(
+        g,
+        EDGE_LABELING_METHODS["Convergence degree"](g),
+    ),
+    "Edge betweenness as node label": lambda g: _edge_feature_embedder(
+        g,
+        EDGE_LABELING_METHODS["Edge betweenness"](g),
+    ),
+    "Marked WL hash edge label as node label": lambda g: _edge_feature_embedder(
+        g,
+        EDGE_LABELING_METHODS["Marked WL hash edge label"](g),
+    ),
 }
 
 EDGE_LABELING_METHODS = {
