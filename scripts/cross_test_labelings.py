@@ -120,7 +120,10 @@ def run_all_tests():
         for method in methods_to_test
     }
 
-    all_graphs = {cls: get_graphs(cls, max_node_count) for cls in classes_to_test}
+    all_graphs = {
+        cls: get_graphs(cls, max(node_counts))
+        for cls, node_counts in classes_to_test.items()
+    }
 
     columns = pd.MultiIndex.from_tuples(
         [
