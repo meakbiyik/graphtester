@@ -110,7 +110,7 @@ def _local_graph_component_sizes(graph: ig.Graph) -> List[str]:
         The labels.
     """
     return [
-        ";".join(
+        ",".join(
             sorted(
                 [
                     str(comp.vcount())
@@ -140,21 +140,15 @@ def _neighborhood_1st_subconst_sign(graph: ig.Graph) -> List[str]:
         The labels.
     """
     return [
-        ";".join(
-            sorted(
-                [
-                    ",".join(
-                        [
-                            str(round(b, 6))
-                            for b in sorted(
-                                graph.induced_subgraph(
-                                    graph.neighborhood(node_idx, mindist=1)
-                                ).edge_betweenness()
-                            )
-                        ]
-                    )
-                ]
-            )
+        ",".join(
+            [
+                str(round(b, 6))
+                for b in sorted(
+                    graph.induced_subgraph(
+                        graph.neighborhood(node_idx, mindist=1)
+                    ).edge_betweenness()
+                )
+            ]
         )
         for node_idx in range(graph.vcount())
     ]
@@ -176,21 +170,15 @@ def _neighborhood_2nd_subconst_sign(graph: ig.Graph) -> List[str]:
         The labels.
     """
     return [
-        ";".join(
-            sorted(
-                [
-                    ",".join(
-                        [
-                            str(round(b, 6))
-                            for b in sorted(
-                                graph.induced_subgraph(
-                                    graph.neighborhood(node_idx, mindist=2, order=2)
-                                ).edge_betweenness()
-                            )
-                        ]
-                    )
-                ]
-            )
+        ",".join(
+            [
+                str(round(b, 6))
+                for b in sorted(
+                    graph.induced_subgraph(
+                        graph.neighborhood(node_idx, mindist=2, order=2)
+                    ).edge_betweenness()
+                )
+            ]
         )
         for node_idx in range(graph.vcount())
     ]
