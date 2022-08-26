@@ -57,9 +57,9 @@ else:
         ("Neighborhood 1st subconstituent signatures", "Edge betweenness"),
         ("Neighborhood 2nd subconstituent signatures", "Edge betweenness"),
     ]
-    max_node_count = 30  # 40 is more extensive for a full test
+    max_node_count = 40
     max_graph_count = None
-    skip_3fwl = True  # Enable for final evaluation
+    skip_3fwl = False  # Enable for final evaluation
     process_count = 16  # If 1, the multiprocessing will be disabled.
     silent = False
 
@@ -335,6 +335,20 @@ def run_all_tests():
     results_df.to_string(
         RESULTS_DIR / f"wl_tests_{len(classes_to_test)}_{round(time.time())}.csv"
     )
+
+    results_df.to_latex(
+        RESULTS_DIR / f"wl_tests_{len(classes_to_test)}_{round(time.time())}.tex"
+    )
+
+    s.to_latex(
+        RESULTS_DIR / f"wl_tests_{len(classes_to_test)}_{round(time.time())}_styled.tex"
+    )
+
+    results_df.to_excel(
+        RESULTS_DIR / f"wl_tests_{len(classes_to_test)}_{round(time.time())}.xlsx"
+    )
+
+    return results_df
 
 
 if __name__ == "__main__":
