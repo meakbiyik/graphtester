@@ -160,7 +160,7 @@ def weisfeiler_lehman_hash(
         if node_labels == prev_labels:
             break
 
-    return "".join(sorted(node_labels))
+    return ",".join(sorted(node_labels))
 
 
 def _init_k_tuple_labels(
@@ -223,10 +223,10 @@ def _init_k_tuple_labels(
 
     if node_attr or edge_attr:
         k_tuple_labels = [
-            "".join(
+            ";".join(
                 [
                     str(isoclass(G, node_tuple)),
-                    *("".join(label_tuple) for label_tuple in label_tuples),
+                    *(",".join(label_tuple) for label_tuple in label_tuples),
                 ]
             )
             for node_tuple, label_tuples in zip(
@@ -297,7 +297,7 @@ def _k_weisfeiler_lehman_step(G: ig.Graph, tuple_labels, k: int, folklore: bool)
     if folklore:
         for node_tuple, tuple_label in k_tuple_map.items():
             neighborhood_label_list = [
-                "".join(
+                ",".join(
                     sorted(
                         [
                             k_tuple_map[node_tuple[:i] + (node,) + node_tuple[i + 1 :]]
@@ -307,13 +307,13 @@ def _k_weisfeiler_lehman_step(G: ig.Graph, tuple_labels, k: int, folklore: bool)
                 )
                 for node in range(G.vcount())
             ]
-            new_label = "".join(sorted(neighborhood_label_list + [tuple_label]))
+            new_label = ";".join(sorted(neighborhood_label_list + [tuple_label]))
             new_labels.append(new_label)
 
     else:
         for node_tuple, tuple_label in k_tuple_map.items():
             neighborhood_label_list = [
-                "".join(
+                ",".join(
                     sorted(
                         [
                             k_tuple_map[node_tuple[:i] + (node,) + node_tuple[i + 1 :]]
@@ -323,7 +323,7 @@ def _k_weisfeiler_lehman_step(G: ig.Graph, tuple_labels, k: int, folklore: bool)
                 )
                 for i in range(k)
             ]
-            new_label = "".join(sorted(neighborhood_label_list + [tuple_label]))
+            new_label = ";".join(sorted(neighborhood_label_list + [tuple_label]))
             new_labels.append(new_label)
 
     return new_labels
