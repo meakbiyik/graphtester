@@ -97,16 +97,16 @@ def k_weisfeiler_lehman_test(
     [2] Huang et al., A Short Tutorial on The Weisfeiler-Lehman Test And Its Variants,
         2021. https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=9413523
     """
-    if iterations is None:
-        iterations = G1.vcount() - 1
-
     if k < 2 or k > 6:
         raise ValueError(f"k must be an integer between 2 and 6 inclusive, not {k}")
+
+    if iterations is None:
+        iterations = G1.vcount() ** k - 1
 
     node_labels_g1 = _init_k_tuple_labels(G1, k, node_attr, edge_attr)
     node_labels_g2 = _init_k_tuple_labels(G2, k, node_attr, edge_attr)
 
-    for _ in range(k):
+    for _ in range(iterations):
         new_labels_g1 = _k_weisfeiler_lehman_step(G1, node_labels_g1, k, folklore)
         new_labels_g2 = _k_weisfeiler_lehman_step(G2, node_labels_g2, k, folklore)
 
