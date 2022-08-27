@@ -110,6 +110,11 @@ def evaluate_and_time(
     return results, time_spent
 
 
+def _method_hash(method):
+    methodstr = ",".join(method) if isinstance(method, tuple) else method
+    return hash(methodstr + repr(classes_to_test))
+
+
 def _save_to_cache(datahash, data):
     """Pickle given data to cache."""
     with open(CACHE_DIR / f"{datahash}.pkl", "wb") as f:
@@ -183,7 +188,7 @@ def run_all_tests():
     rows["Graph class size"] = graph_class_sizes + [sum(graph_class_sizes), "-"]
     rows["Test count n(n−1)/2"] = wl_test_counts + [sum(wl_test_counts), "-"]
 
-    vanilla_datahash = hash("Vanilla 1-WL" + repr(classes_to_test))
+    vanilla_datahash = _method_hash("Vanilla 1-WL")
     vanilla_results, vanilla_failures = _evaluate_method_cached(
         vanilla_datahash,
         all_graphs,
@@ -194,7 +199,7 @@ def run_all_tests():
     )
     rows["Vanilla 1-WL"] = vanilla_results + [sum(vanilla_results), "-"]
 
-    fwl_2_datahash = hash("2-FWL" + repr(classes_to_test))
+    fwl_2_datahash = _method_hash("2-FWL")
     fwl_2_results, fwl_2_failures = _evaluate_method_cached(
         fwl_2_datahash,
         all_graphs,
@@ -210,7 +215,7 @@ def run_all_tests():
     if process_count == 1:
 
         if not skip_3fwl:
-            fwl_3_datahash = hash("3-FWL" + repr(classes_to_test))
+            fwl_3_datahash = _method_hash("3-FWL")
             fwl_3_results = _evaluate_method_cached(
                 fwl_3_datahash,
                 all_graphs,
@@ -223,7 +228,7 @@ def run_all_tests():
             rows["3-FWL"] = fwl_3_results + [sum(fwl_3_results), "-"]
 
         for method in methods_to_test:
-            method_datahash = hash(method + repr(classes_to_test))
+            method_datahash = _method_hash(method)
             results, time_spent = _evaluate_and_time_cached(
                 method_datahash,
                 all_graphs,
@@ -240,7 +245,7 @@ def run_all_tests():
 
         if not skip_3fwl:
             with mp.Pool(process_count) as pool:
-                fwl_3_datahash = hash("3-FWL" + repr(classes_to_test))
+                fwl_3_datahash = _method_hash("3-FWL")
                 fwl_3_results_async = pool.apply_async(
                     _evaluate_method_cached,
                     (
@@ -258,7 +263,7 @@ def run_all_tests():
                     _evaluate_and_time_cached,
                     [
                         (
-                            hash(method + repr(classes_to_test)),
+                            _method_hash(method),
                             all_graphs,
                             method,
                             max_graph_count,
@@ -277,7 +282,7 @@ def run_all_tests():
                     _evaluate_and_time_cached,
                     [
                         (
-                            hash(method + repr(classes_to_test)),
+                            _method_hash(method),
                             all_graphs,
                             method,
                             max_graph_count,
