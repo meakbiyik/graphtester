@@ -80,7 +80,7 @@ def k_weisfeiler_lehman_test(
     k : int
         Degree of the WL test, 2 <= k <= 6.
     iterations : int, optional
-        The number of iterations to run. If None (default), run (n-1) iterations,
+        The number of iterations to run. If None (default), run (n**k-1) iterations,
         where n is the number of vertices of inputs. See [1] for more details.
     folklore : bool, optional
         Whether to use the folklore variant (k-FWL) of k-WL test. By default False.
