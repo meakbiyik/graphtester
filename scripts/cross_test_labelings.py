@@ -20,6 +20,9 @@ from graphtester import (
 RESULTS_DIR = Path(__file__).parents[1] / "results"
 CACHE_DIR = Path(__file__).parents[1] / "cache"
 
+RESULTS_DIR.mkdir(exist_ok=True)
+CACHE_DIR.mkdir(exist_ok=True)
+
 
 def in_notebook():
     """Check if we are in a Jupyter notebook.
