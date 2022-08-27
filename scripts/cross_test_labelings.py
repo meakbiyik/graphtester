@@ -59,7 +59,7 @@ else:
         ("Neighborhood 1st subconstituent signatures", "Edge betweenness"),
         ("Neighborhood 2nd subconstituent signatures", "Edge betweenness"),
     ]
-    max_node_count = 10
+    max_node_count = 40
     max_graph_count = None
     skip_3fwl = False  # Enable for final evaluation
     process_count = 16  # If 1, the multiprocessing will be disabled.
