@@ -1,5 +1,6 @@
 """Cross-test labelings with all graph classes."""
 import multiprocessing as mp
+import pickle
 import time
 from pathlib import Path
 from typing import Dict, List, Tuple
@@ -17,6 +18,7 @@ from graphtester import (
 )
 
 RESULTS_DIR = Path(__file__).parents[1] / "results"
+CACHE_DIR = Path(__file__).parents[1] / "cache"
 
 
 def in_notebook():
@@ -57,7 +59,7 @@ else:
         ("Neighborhood 1st subconstituent signatures", "Edge betweenness"),
         ("Neighborhood 2nd subconstituent signatures", "Edge betweenness"),
     ]
-    max_node_count = 40
+    max_node_count = 10
     max_graph_count = None
     skip_3fwl = False  # Enable for final evaluation
     process_count = 16  # If 1, the multiprocessing will be disabled.
@@ -105,6 +107,38 @@ def evaluate_and_time(
     return results, time_spent
 
 
+def _save_to_cache(datahash, data):
+    """Pickle given data to cache."""
+    with open(CACHE_DIR / f"{datahash}.pkl", "wb") as f:
+        pickle.dump(data, f)
+
+
+def _retrieve_from_cache(datahash):
+    """Retrieve from cache with the given hash if available."""
+    if (CACHE_DIR / f"{datahash}.pkl").exists():
+        with open(CACHE_DIR / f"{datahash}.pkl", "rb") as f:
+            data = pickle.load(f)
+        return data
+    else:
+        return None
+
+
+def _cache_output(f, datahash, *args, **kwargs):
+    data = _retrieve_from_cache(datahash)
+    if data is None:
+        data = f(*args, **kwargs)
+        _save_to_cache(datahash, data)
+    return data
+
+
+def _evaluate_method_cached(datahash, *args, **kwargs):
+    return _cache_output(evaluate_method, datahash, *args, **kwargs)
+
+
+def _evaluate_and_time_cached(datahash, *args, **kwargs):
+    return _cache_output(evaluate_and_time, datahash, *args, **kwargs)
+
+
 def run_all_tests():
     """Run all tests for the given classes/methods.
 
@@ -146,7 +180,9 @@ def run_all_tests():
     rows["Graph class size"] = graph_class_sizes + [sum(graph_class_sizes), "-"]
     rows["Test count n(n−1)/2"] = wl_test_counts + [sum(wl_test_counts), "-"]
 
-    vanilla_results, vanilla_failures = evaluate_method(
+    vanilla_datahash = hash("Vanilla 1-WL" + repr(classes_to_test))
+    vanilla_results, vanilla_failures = _evaluate_method_cached(
+        vanilla_datahash,
         all_graphs,
         "vanilla",
         return_failed_tests=True,
@@ -155,7 +191,9 @@ def run_all_tests():
     )
     rows["Vanilla 1-WL"] = vanilla_results + [sum(vanilla_results), "-"]
 
-    fwl_2_results, fwl_2_failures = evaluate_method(
+    fwl_2_datahash = hash("2-FWL" + repr(classes_to_test))
+    fwl_2_results, fwl_2_failures = _evaluate_method_cached(
+        fwl_2_datahash,
         all_graphs,
         "vanilla",
         test_degree=2,
@@ -169,7 +207,9 @@ def run_all_tests():
     if process_count == 1:
 
         if not skip_3fwl:
-            fwl_3_results = evaluate_method(
+            fwl_3_datahash = hash("3-FWL" + repr(classes_to_test))
+            fwl_3_results = _evaluate_method_cached(
+                fwl_3_datahash,
                 all_graphs,
                 "vanilla",
                 test_degree=3,
@@ -180,7 +220,9 @@ def run_all_tests():
             rows["3-FWL"] = fwl_3_results + [sum(fwl_3_results), "-"]
 
         for method in methods_to_test:
-            results, time_spent = evaluate_and_time(
+            method_datahash = hash(method + repr(classes_to_test))
+            results, time_spent = _evaluate_and_time_cached(
+                method_datahash,
                 all_graphs,
                 method,
                 graph_pair_indices=vanilla_failures,
@@ -195,9 +237,11 @@ def run_all_tests():
 
         if not skip_3fwl:
             with mp.Pool(process_count) as pool:
+                fwl_3_datahash = hash("3-FWL" + repr(classes_to_test))
                 fwl_3_results_async = pool.apply_async(
-                    evaluate_method,
+                    _evaluate_method_cached,
                     (
+                        fwl_3_datahash,
                         all_graphs,
                         "vanilla",
                         3,
@@ -208,9 +252,15 @@ def run_all_tests():
                     ),
                 )
                 results_and_times = pool.starmap(
-                    evaluate_and_time,
+                    _evaluate_and_time_cached,
                     [
-                        (all_graphs, method, max_graph_count, vanilla_failures)
+                        (
+                            hash(method + repr(classes_to_test)),
+                            all_graphs,
+                            method,
+                            max_graph_count,
+                            vanilla_failures,
+                        )
                         for method in methods_to_test
                     ],
                 )
@@ -221,9 +271,15 @@ def run_all_tests():
         else:
             with mp.Pool(process_count) as pool:
                 results_and_times = pool.starmap(
-                    evaluate_and_time,
+                    _evaluate_and_time_cached,
                     [
-                        (all_graphs, method, max_graph_count, vanilla_failures)
+                        (
+                            hash(method + repr(classes_to_test)),
+                            all_graphs,
+                            method,
+                            max_graph_count,
+                            vanilla_failures,
+                        )
                         for method in methods_to_test
                     ],
                 )
