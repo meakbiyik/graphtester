@@ -38,17 +38,35 @@ def weisfeiler_lehman_test(
     if iterations is None:
         iterations = G1.vcount() - 1
 
+    g1_stabilized = False
+    g2_stabilized = False
+
     node_labels_g1 = _init_node_labels(G1, node_attr)
     node_labels_g2 = _init_node_labels(G2, node_attr)
 
     for _ in range(iterations):
 
-        new_labels_g1 = _weisfeiler_lehman_step(G1, node_labels_g1, edge_attr=edge_attr)
-        new_labels_g2 = _weisfeiler_lehman_step(G2, node_labels_g2, edge_attr=edge_attr)
+        if not g1_stabilized:
+            new_labels_g1 = _weisfeiler_lehman_step(
+                G1, node_labels_g1, edge_attr=edge_attr
+            )
+            compressed_labels_g1 = _compress_labels(new_labels_g1)
+            if compressed_labels_g1 == node_labels_g1:
+                g1_stabilized = True
+            node_labels_g1 = compressed_labels_g1
+            sorted_node_labels_g1 = sorted(node_labels_g1)
 
-        node_labels_g1, node_labels_g2 = _reassign_labels(new_labels_g1, new_labels_g2)
+        if not g2_stabilized:
+            new_labels_g2 = _weisfeiler_lehman_step(
+                G2, node_labels_g2, edge_attr=edge_attr
+            )
+            compressed_labels_g2 = _compress_labels(new_labels_g2)
+            if compressed_labels_g2 == node_labels_g2:
+                g2_stabilized = True
+            node_labels_g2 = compressed_labels_g2
+            sorted_node_labels_g2 = sorted(node_labels_g2)
 
-        if sorted(node_labels_g1) != sorted(node_labels_g2):
+        if sorted_node_labels_g1 != sorted_node_labels_g2:
             return False
 
     return True
@@ -100,6 +118,9 @@ def k_weisfeiler_lehman_test(
     if k < 2 or k > 6:
         raise ValueError(f"k must be an integer between 2 and 6 inclusive, not {k}")
 
+    g1_stabilized = False
+    g2_stabilized = False
+
     if iterations is None:
         iterations = G1.vcount() ** k - 1
 
@@ -107,12 +128,24 @@ def k_weisfeiler_lehman_test(
     node_labels_g2 = _init_k_tuple_labels(G2, k, node_attr, edge_attr)
 
     for _ in range(iterations):
-        new_labels_g1 = _k_weisfeiler_lehman_step(G1, node_labels_g1, k, folklore)
-        new_labels_g2 = _k_weisfeiler_lehman_step(G2, node_labels_g2, k, folklore)
 
-        node_labels_g1, node_labels_g2 = _reassign_labels(new_labels_g1, new_labels_g2)
+        if not g1_stabilized:
+            new_labels_g1 = _k_weisfeiler_lehman_step(G1, node_labels_g1, k, folklore)
+            compressed_labels_g1 = _compress_labels(new_labels_g1)
+            if compressed_labels_g1 == node_labels_g1:
+                g1_stabilized = True
+            node_labels_g1 = compressed_labels_g1
+            sorted_node_labels_g1 = sorted(node_labels_g1)
 
-        if sorted(node_labels_g1) != sorted(node_labels_g2):
+        if not g2_stabilized:
+            new_labels_g2 = _k_weisfeiler_lehman_step(G2, node_labels_g2, k, folklore)
+            compressed_labels_g2 = _compress_labels(new_labels_g2)
+            if compressed_labels_g2 == node_labels_g2:
+                g2_stabilized = True
+            node_labels_g2 = compressed_labels_g2
+            sorted_node_labels_g2 = sorted(node_labels_g2)
+
+        if sorted_node_labels_g1 != sorted_node_labels_g2:
             return False
 
     return True
@@ -155,7 +188,7 @@ def weisfeiler_lehman_hash(
         new_labels = _weisfeiler_lehman_step(G, node_labels, edge_attr=edge_attr)
 
         prev_labels = node_labels
-        node_labels = _reassign_labels(new_labels)
+        node_labels = _compress_labels(new_labels)
 
         if node_labels == prev_labels:
             break
@@ -389,45 +422,32 @@ def _aggregate_neighborhood(G: ig.Graph, node_idx, node_labels, edge_attr=None):
     str
         The new label.
     """
+    node_neighbors = G.neighbors(node_idx)
     if edge_attr is not None:
-        label_list = []
-        for nbr in G.neighbors(node_idx):
+        label_list = [""] * len(node_neighbors)
+        for idx, nbr in enumerate(node_neighbors):
             edge = G.es.find(_between=((node_idx,), (nbr,)))
             prefix = str(edge[edge_attr])
-            label_list.append(prefix + node_labels[nbr])
+            label_list[idx] = prefix + node_labels[nbr]
     else:
-        label_list = [node_labels[nbr] for nbr in G.neighbors(node_idx)]
+        label_list = [node_labels[nbr] for nbr in node_neighbors]
 
     return node_labels[node_idx] + ",".join(sorted(label_list))
 
 
-def _reassign_labels(labels_g1, labels_g2=None) -> bool:
-    """Reassign the labels of the nodes or node tuples in the graphs.
+def _compress_labels(labels) -> bool:
+    """Compress the labels of the nodes or node tuples in the graph.
 
     Parameters
     ----------
-    labels_g1 : List[str]
-        The labels of the first graph.
-    labels_g2 : List[str], optional
-        The labels of the second graph.
+    labels : List[str]
+        The labels of the nodes.
 
     Returns
     -------
     List[str]
-        The new labels of the first graph.
-    List[str]
-        The new labels of the second graph, only present if labels_g2 is not None.
+        The new labels of the nodes.
     """
-    if labels_g2 is None:
-        labels_g2 = []
+    label_map = {label: str(i) for i, label in enumerate(sorted(labels))}
 
-    all_labels = set(sorted(labels_g1 + labels_g2))
-    label_map = {label: str(i) for i, label in enumerate(all_labels)}
-
-    new_labels_g1 = [label_map[label] for label in labels_g1]
-    new_labels_g2 = [label_map[label] for label in labels_g2]
-
-    if labels_g2:
-        return new_labels_g1, new_labels_g2
-
-    return new_labels_g1
+    return [label_map[label] for label in labels]

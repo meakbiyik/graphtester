@@ -4,6 +4,7 @@ import time
 from typing import Dict, List, Tuple, Union
 
 import igraph as ig
+import numpy as np
 
 from graphtester import k_weisfeiler_lehman_test as kwl_test
 from graphtester import label_graph
@@ -163,12 +164,24 @@ def _test_all_graphs(graphs: List[ig.Graph], labeling: Tuple[str], test_degree: 
     """
     fail_count = 0
     failures = []
+    graph_isomorphic_references = np.full((len(graphs), len(graphs)), False, dtype=bool)
     for i in range(len(graphs)):
         for j in range(i + 1, len(graphs)):
-            test = _run_test(graphs[i], graphs[j], labeling, test_degree)
-            if test and not graphs[i].isomorphic(graphs[j]):
-                fail_count += 1
-                failures.append((i, j))
+            if np.logical_and(
+                graph_isomorphic_references[i], graph_isomorphic_references[j]
+            ).any():
+                # There is a trick we apply here to make things faster: if method
+                # cannot distinguish graph a from b, and a from c, then we do not
+                # need to test b from c.
+                test = True
+            else:
+                test = _run_test(graphs[i], graphs[j], labeling, test_degree)
+            if test:
+                graph_isomorphic_references[i, j] = True
+                graph_isomorphic_references[j, i] = True
+                if not graphs[i].isomorphic(graphs[j]):
+                    fail_count += 1
+                    failures.append((i, j))
     return fail_count, failures
 
 
@@ -198,9 +211,20 @@ def _test_indexed_graphs(
     """
     fail_count = 0
     failures = []
+    graph_isomorphic_references = np.full((len(graphs), len(graphs)), False, dtype=bool)
     for (i, j) in graph_pair_indices:
-        test = _run_test(graphs[i], graphs[j], labeling, test_degree)
+        if np.logical_and(
+            graph_isomorphic_references[i], graph_isomorphic_references[j]
+        ).any():
+            # There is a trick we apply here to make things faster: if method
+            # cannot distinguish graph a from b, and a from c, then we do not
+            # need to test b from c.
+            test = True
+        else:
+            test = _run_test(graphs[i], graphs[j], labeling, test_degree)
         if test:
+            graph_isomorphic_references[i, j] = True
+            graph_isomorphic_references[j, i] = True
             fail_count += 1
             failures.append((i, j))
     return fail_count, failures

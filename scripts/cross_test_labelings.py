@@ -189,9 +189,8 @@ def run_all_tests():
     rows["Graph class size"] = graph_class_sizes + [sum(graph_class_sizes), "-"]
     rows["Test count n(n−1)/2"] = wl_test_counts + [sum(wl_test_counts), "-"]
 
-    vanilla_datahash = _method_hash("Vanilla 1-WL")
     vanilla_results, vanilla_failures = _evaluate_method_cached(
-        vanilla_datahash,
+        _method_hash("Vanilla 1-WL"),
         all_graphs,
         "vanilla",
         return_failed_tests=True,
@@ -200,25 +199,23 @@ def run_all_tests():
     )
     rows["Vanilla 1-WL"] = vanilla_results + [sum(vanilla_results), "-"]
 
-    fwl_2_datahash = _method_hash("2-FWL")
-    fwl_2_results, fwl_2_failures = _evaluate_method_cached(
-        fwl_2_datahash,
-        all_graphs,
-        "vanilla",
-        test_degree=2,
-        graph_pair_indices=vanilla_failures,
-        return_failed_tests=True,
-        max_graph_count=max_graph_count,
-        silent=silent,
-    )
-    rows["2-FWL"] = fwl_2_results + [sum(fwl_2_results), "-"]
-
     if process_count == 1:
 
+        fwl_2_results, fwl_2_failures = _evaluate_method_cached(
+            _method_hash("2-FWL"),
+            all_graphs,
+            "vanilla",
+            test_degree=2,
+            graph_pair_indices=vanilla_failures,
+            return_failed_tests=True,
+            max_graph_count=max_graph_count,
+            silent=silent,
+        )
+        rows["2-FWL"] = fwl_2_results + [sum(fwl_2_results), "-"]
+
         if not skip_3fwl:
-            fwl_3_datahash = _method_hash("3-FWL")
             fwl_3_results = _evaluate_method_cached(
-                fwl_3_datahash,
+                _method_hash("3-FWL"),
                 all_graphs,
                 "vanilla",
                 test_degree=3,
@@ -229,9 +226,8 @@ def run_all_tests():
             rows["3-FWL"] = fwl_3_results + [sum(fwl_3_results), "-"]
 
         for method in methods_to_test:
-            method_datahash = _method_hash(method)
             results, time_spent = _evaluate_and_time_cached(
-                method_datahash,
+                _method_hash(method),
                 all_graphs,
                 method,
                 graph_pair_indices=vanilla_failures,
@@ -244,13 +240,42 @@ def run_all_tests():
 
     else:
 
-        if not skip_3fwl:
-            with mp.Pool(process_count) as pool:
-                fwl_3_datahash = _method_hash("3-FWL")
+        with mp.Pool(process_count) as pool:
+            fwl_2_results_async = pool.apply_async(
+                _evaluate_method_cached,
+                (
+                    _method_hash("2-FWL"),
+                    all_graphs,
+                    "vanilla",
+                    2,
+                    max_graph_count,
+                    vanilla_failures,
+                    True,
+                    silent,
+                ),
+            )
+
+            results_and_times_async = pool.starmap_async(
+                _evaluate_and_time_cached,
+                [
+                    (
+                        _method_hash(method),
+                        all_graphs,
+                        method,
+                        max_graph_count,
+                        vanilla_failures,
+                    )
+                    for method in methods_to_test
+                ],
+            )
+
+            fwl_2_results, fwl_2_failures = fwl_2_results_async.get()
+
+            if not skip_3fwl:
                 fwl_3_results_async = pool.apply_async(
                     _evaluate_method_cached,
                     (
-                        fwl_3_datahash,
+                        _method_hash("3-FWL"),
                         all_graphs,
                         "vanilla",
                         3,
@@ -260,39 +285,13 @@ def run_all_tests():
                         silent,
                     ),
                 )
-                results_and_times = pool.starmap(
-                    _evaluate_and_time_cached,
-                    [
-                        (
-                            _method_hash(method),
-                            all_graphs,
-                            method,
-                            max_graph_count,
-                            vanilla_failures,
-                        )
-                        for method in methods_to_test
-                    ],
-                )
                 fwl_3_results = fwl_3_results_async.get()
 
+            results_and_times = results_and_times_async.get()
+
+        rows["2-FWL"] = fwl_2_results + [sum(fwl_2_results), "-"]
+        if not skip_3fwl:
             rows["3-FWL"] = fwl_3_results + [sum(fwl_3_results), "-"]
-
-        else:
-            with mp.Pool(process_count) as pool:
-                results_and_times = pool.starmap(
-                    _evaluate_and_time_cached,
-                    [
-                        (
-                            _method_hash(method),
-                            all_graphs,
-                            method,
-                            max_graph_count,
-                            vanilla_failures,
-                        )
-                        for method in methods_to_test
-                    ],
-                )
-
         for method, (result, time_spent) in zip(methods_to_test, results_and_times):
             rows[method_descriptions[method]] = result + [sum(result), f"{time_spent}s"]
 
