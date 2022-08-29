@@ -1,5 +1,6 @@
 # Package-related
 *.pickle
+*.pkl
 results/
 
 # Byte-compiled / optimized / DLL files
