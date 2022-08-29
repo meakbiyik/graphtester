@@ -1,4 +1,5 @@
 """Cross-test labelings with all graph classes."""
+import hashlib
 import multiprocessing as mp
 import pickle
 import time
@@ -112,7 +113,7 @@ def evaluate_and_time(
 
 def _method_hash(method):
     methodstr = ",".join(method) if isinstance(method, tuple) else method
-    return hash(methodstr + repr(classes_to_test))
+    return hashlib.sha1(methodstr.encode()).hexdigest()
 
 
 def _save_to_cache(datahash, data):
