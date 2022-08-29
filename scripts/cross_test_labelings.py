@@ -113,7 +113,8 @@ def evaluate_and_time(
 
 def _method_hash(method):
     methodstr = ",".join(method) if isinstance(method, tuple) else method
-    return hashlib.sha1(methodstr.encode()).hexdigest()
+    methodstr = methodstr + str(max_graph_count) + repr(classes_to_test)
+    return hashlib.sha1(methodstr.encode("UTF-8")).hexdigest()
 
 
 def _save_to_cache(datahash, data):
