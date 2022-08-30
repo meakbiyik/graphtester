@@ -397,18 +397,23 @@ def run_all_tests():
         table_attributes='border="0" cellspacing="0" cellpadding="4px"',
     )
 
+    s.to_latex(
+        RESULTS_DIR
+        / f"wl_tests_{len(classes_to_test)}_{round(time.time())}_styled.tex",
+        convert_css=True,
+    )
+
+    s.to_excel(
+        RESULTS_DIR
+        / f"wl_tests_{len(classes_to_test)}_{round(time.time())}_styled.xlsx"
+    )
+
     results_df.to_string(
         RESULTS_DIR / f"wl_tests_{len(classes_to_test)}_{round(time.time())}.csv"
     )
 
     results_df.to_latex(
         RESULTS_DIR / f"wl_tests_{len(classes_to_test)}_{round(time.time())}.tex"
-    )
-
-    s.to_latex(
-        RESULTS_DIR
-        / f"wl_tests_{len(classes_to_test)}_{round(time.time())}_styled.tex",
-        convert_css=True,
     )
 
     results_df.to_excel(
