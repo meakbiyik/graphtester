@@ -406,7 +406,9 @@ def run_all_tests():
     )
 
     s.to_latex(
-        RESULTS_DIR / f"wl_tests_{len(classes_to_test)}_{round(time.time())}_styled.tex"
+        RESULTS_DIR
+        / f"wl_tests_{len(classes_to_test)}_{round(time.time())}_styled.tex",
+        convert_css=True,
     )
 
     results_df.to_excel(
