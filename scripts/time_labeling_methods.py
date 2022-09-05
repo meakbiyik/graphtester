@@ -11,6 +11,7 @@ from graphtester import GRAPH_CLASS_DESCRIPTIONS, get_graphs, label_graph
 
 RESULTS_DIR = Path(__file__).parents[1] / "results"
 sns.set_context("paper", font_scale=1.5)
+sns.set_theme(style="whitegrid")
 
 classes = ["all", "highlyirregular", "strongly_regular"]
 methods = [
@@ -29,7 +30,7 @@ for cls in classes:
     graphs_dict = get_graphs(cls, max_node_count=40)
 
     for node_count, graphs in tqdm.tqdm(graphs_dict.items()):
-        for graph in graphs:
+        for graph in graphs[:200]:
             for method in methods:
                 time = timeit.timeit(lambda: label_graph(graph, method), number=10) / 10
                 times.append(
@@ -51,6 +52,7 @@ g = sns.lineplot(
     style="Graph class",
     data=times_df,
     err_style="bars",
+    linewidth=3,
 )
 g.set_yscale("log")
 plt.xlabel("Number of nodes")
