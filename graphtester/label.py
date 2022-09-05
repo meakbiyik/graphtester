@@ -550,8 +550,8 @@ VERTEX_LABELING_METHODS = {
     ),
     "Local graph component count": _local_graph_component_count,
     "Local graph component sizes": _local_graph_component_sizes,
-    "Neighborhood 1st subconstituent signatures": _neighborhood_1st_subconst_sign,
-    "Neighborhood 2nd subconstituent signatures": _neighborhood_2nd_subconst_sign,
+    "1st subconstituent signatures": _neighborhood_1st_subconst_sign,
+    "2nd subconstituent signatures": _neighborhood_2nd_subconst_sign,
     "Convergence degree as node label": lambda g: _edge_feature_embedder(
         g,
         EDGE_LABELING_METHODS["Convergence degree"](g),

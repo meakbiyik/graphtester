@@ -33,8 +33,8 @@ print(
     f"3-FWL test: {'failed' if kwl_test(g1, g2, k=3, folklore=True) else 'succeeded'}"
 )
 
-labeled_g1 = label_graph(g1, ["Neighborhood 1st subconstituent signatures"])
-labeled_g2 = label_graph(g2, ["Neighborhood 1st subconstituent signatures"])
+labeled_g1 = label_graph(g1, ["1st subconstituent signatures"])
+labeled_g2 = label_graph(g2, ["1st subconstituent signatures"])
 
 # Test (and succeed)
 labeled_wl_test = wl_test(labeled_g1, labeled_g2, "label", "label")
