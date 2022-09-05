@@ -404,7 +404,7 @@ def _aggregate_neighborhood(G: ig.Graph, node_idx, node_labels, edge_attr=None):
         for idx, nbr in enumerate(node_neighbors):
             edge = G.es.find(_between=((node_idx,), (nbr,)))
             prefix = str(edge[edge_attr])
-            label_list[idx] = prefix + node_labels[nbr]
+            label_list[idx] = prefix + ";" + node_labels[nbr]
     else:
         label_list = [node_labels[nbr] for nbr in node_neighbors]
 
