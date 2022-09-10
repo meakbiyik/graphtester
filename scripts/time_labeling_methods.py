@@ -2,6 +2,7 @@
 import timeit
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import seaborn as sns
 import tqdm
@@ -10,6 +11,7 @@ from matplotlib import pyplot as plt
 from graphtester import GRAPH_CLASS_DESCRIPTIONS, get_graphs, label_graph
 
 RESULTS_DIR = Path(__file__).parents[1] / "results"
+RNG = np.random.default_rng(0)
 sns.set_context("paper", font_scale=1.5)
 sns.set_theme(style="whitegrid")
 
@@ -28,9 +30,10 @@ for cls in classes:
     graphs_dict = get_graphs(cls, max_node_count=40)
 
     for node_count, graphs in tqdm.tqdm(graphs_dict.items()):
-        rep = 10 if node_count < 20 else 3
-        count = 1000 if node_count < 20 else 50
-        for graph in graphs[:count]:
+        rep = 5 if node_count < 20 else 3
+        count = 500 if node_count < 20 else 50
+        shuffled_graphs = RNG.permutation(graphs)
+        for graph in shuffled_graphs[:count]:
             for method in methods:
                 time = (
                     timeit.timeit(lambda: label_graph(graph, method), number=rep) / rep
