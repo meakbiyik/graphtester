@@ -13,16 +13,14 @@ RESULTS_DIR = Path(__file__).parents[1] / "results"
 sns.set_context("paper", font_scale=1.5)
 sns.set_theme(style="whitegrid")
 
-classes = ["all", "highlyirregular", "strongly_regular"]
+classes = ["strongly_regular", "all", "highlyirregular"]
 methods = [
     ("1st subconstituent signatures", "Edge betweenness"),
     ("2nd subconstituent signatures", "Edge betweenness"),
-    ("4-path count of edges",),
-    ("5-path count of edges",),
-    ("6-path count of edges",),
     ("4-clique count of edges",),
-    ("5-clique count of edges",),
-    ("6-clique count of edges",),
+    ("5-path count of edges",),
+    ("6-path count of vertices",),
+    ("6-cycle count of vertices",),
 ]
 times = []
 
@@ -31,7 +29,7 @@ for cls in classes:
 
     for node_count, graphs in tqdm.tqdm(graphs_dict.items()):
         rep = 10 if node_count < 20 else 3
-        count = 200 if node_count < 20 else 20
+        count = 1000 if node_count < 20 else 50
         for graph in graphs[:count]:
             for method in methods:
                 time = (
@@ -56,7 +54,7 @@ g = sns.lineplot(
     style="Graph class",
     data=times_df,
     err_style="bars",
-    linewidth=3,
+    linewidth=1.5,
 )
 g.set_yscale("log")
 plt.xlabel("Number of nodes")
