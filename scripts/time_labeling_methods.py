@@ -30,9 +30,13 @@ for cls in classes:
     graphs_dict = get_graphs(cls, max_node_count=40)
 
     for node_count, graphs in tqdm.tqdm(graphs_dict.items()):
-        for graph in graphs[:100]:
+        rep = 10 if node_count < 20 else 3
+        count = 200 if node_count < 20 else 20
+        for graph in graphs[:count]:
             for method in methods:
-                time = timeit.timeit(lambda: label_graph(graph, method), number=10) / 10
+                time = (
+                    timeit.timeit(lambda: label_graph(graph, method), number=rep) / rep
+                )
                 times.append(
                     {
                         "Graph class": GRAPH_CLASS_DESCRIPTIONS[cls],
