@@ -1,0 +1,82 @@
+{
+    "name": "GT-small",
+    "version": "0.1.0",
+    "classes": [
+        "all",
+        "eul",
+        "planar_conn",
+        "chordal",
+        "perfect",
+        "highlyirregular",
+        "crit4",
+        "selfcomp"
+    ],
+    "node_counts": {
+        "all": [
+            3,
+            4,
+            5,
+            6,
+            7
+        ],
+        "eul": [
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+        ],
+        "planar_conn": [
+            3,
+            4,
+            5,
+            6,
+            7
+        ],
+        "chordal": [
+            4,
+            5,
+            6,
+            7,
+            8
+        ],
+        "perfect": [
+            5,
+            6,
+            7
+        ],
+        "highlyirregular": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13
+        ],
+        "crit4": [
+            7,
+            8,
+            9,
+            10,
+            11
+        ],
+        "selfcomp": [
+            5,
+            8,
+            9,
+            12
+        ]
+    },
+    "num_graphs": {
+        "all": 1249,
+        "eul": 2363,
+        "planar_conn": 773,
+        "chordal": 1964,
+        "perfect": 1087,
+        "highlyirregular": 624,
+        "crit4": 1399,
+        "selfcomp": 768
+    }
+}

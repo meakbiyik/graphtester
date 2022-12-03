@@ -2,12 +2,11 @@
 import networkx as nx
 from matplotlib import pyplot as plt
 
-from graphtester import get_graphs
 from graphtester import k_weisfeiler_lehman_test as kwl_test
-from graphtester import label_graph
+from graphtester import label_graph, produce
 from graphtester import weisfeiler_lehman_test as wl_test
 
-graphs_dict = get_graphs("strongly_regular")
+graphs_dict = produce("strongly_regular")
 g1, g2 = graphs_dict[16][:2]
 ng1, ng2 = g1.to_networkx(), g2.to_networkx()
 

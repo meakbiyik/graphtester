@@ -15,7 +15,7 @@ from graphtester import (
     GRAPH_CLASS_DESCRIPTIONS,
     GRAPH_CLASSES,
     evaluate_method,
-    get_graphs,
+    produce,
 )
 
 RESULTS_DIR = Path(__file__).parents[1] / "results"
@@ -165,7 +165,7 @@ def run_all_tests():
     }
 
     all_graphs = {
-        cls: get_graphs(cls, max(node_counts))
+        cls: produce(cls, max(node_counts))
         for cls, node_counts in classes_to_test.items()
     }
 

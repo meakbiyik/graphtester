@@ -1,6 +1,7 @@
 # Package-related
 *.pickle
 *.pkl
+!graphtester/io/datasets/*.pkl
 results/
 
 # Byte-compiled / optimized / DLL files

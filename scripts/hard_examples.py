@@ -2,9 +2,8 @@
 import networkx as nx
 from matplotlib import pyplot as plt
 
-from graphtester import get_graphs
 from graphtester import k_weisfeiler_lehman_test as kwl_test
-from graphtester import label_graph
+from graphtester import label_graph, produce
 from graphtester import weisfeiler_lehman_test as wl_test
 
 # Dodecahedron:
@@ -12,7 +11,7 @@ from graphtester import weisfeiler_lehman_test as wl_test
 # vs
 # Desargues graph ≅ D(O_3):
 # https://www.distanceregular.org/graphs/desargues.html
-graphs_dict = get_graphs("distance_regular")
+graphs_dict = produce("distance_regular")
 g1, g2 = graphs_dict[20][:2]
 ng1, ng2 = g1.to_networkx(), g2.to_networkx()
 
@@ -58,7 +57,7 @@ plt.show()
 # GQ(2,4) minus spread graphs (N=2)
 # https://www.distanceregular.org/graphs/gq2.4minusspread.html
 # Also see: https://mathworld.wolfram.com/GeneralizedQuadrangle.html
-graphs_dict = get_graphs("distance_regular")
+graphs_dict = produce("distance_regular")
 g1, g2 = graphs_dict[27][1:3]
 ng1, ng2 = g1.to_networkx(), g2.to_networkx()
 

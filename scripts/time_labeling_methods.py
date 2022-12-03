@@ -8,7 +8,7 @@ import seaborn as sns
 import tqdm
 from matplotlib import pyplot as plt
 
-from graphtester import GRAPH_CLASS_DESCRIPTIONS, get_graphs, label_graph
+from graphtester import GRAPH_CLASS_DESCRIPTIONS, label_graph, produce
 
 RESULTS_DIR = Path(__file__).parents[1] / "results"
 RNG = np.random.default_rng(0)
@@ -27,7 +27,7 @@ methods = [
 times = []
 
 for cls in classes:
-    graphs_dict = get_graphs(cls, max_node_count=40)
+    graphs_dict = produce(cls, max_node_count=40)
 
     for node_count, graphs in tqdm.tqdm(graphs_dict.items()):
         rep = 5 if node_count < 20 else 3

@@ -107,11 +107,29 @@ _SR_LINKS = {
 }
 
 
-def get_graphs(graph_class, max_node_count=None) -> Dict[int, List[ig.Graph]]:
-    """Get graphs of the given graph class, by their vertex count.
+def produce(graph_class, max_node_count=None) -> Dict[int, List[ig.Graph]]:
+    """Produce graphs of the given graph class, by their vertex count.
 
     If the graphs do not exist in the data folder,
     either download them, or generate and save them.
+
+    Following graph classes are supported (for the given node counts):
+        - "all": All non-isomorphic graphs for given node sizes - [3, 4, 5, 6, 7, 8]
+        - "eul": Eulerian graphs - [3, 4, 5, 6, 7, 8, 9]
+        - "planar_conn": Planar connected graphs - [3, 4, 5, 6, 7, 8]
+        - "chordal": Chordal graphs - [4, 5, 6, 7, 8, 9]
+        - "perfect": Perfect graphs - [5, 6, 7, 8]
+        - "highlyirregular": Highly irregular graphs - [8, 9, 10, 11, 12, 13]
+        - "crit4": Edge-4-critical graphs - [7, 8, 9, 10, 11]
+        - "selfcomp": Self-complementary graphs - [5, 8, 9, 12, 13]
+        - "strongly_regular": Strongly regular graphs -
+            [16, 25, 26, 28, 29, 36, 40, 45, 50, 64]
+        - "distance_regular": Distance regular graphs -
+            [10, 12, 14, 15, 16, 18, 20, 21, 22, 24, 25,
+             26, 27, 28, 30, 32, 35, 36, 40, 42, 45, 50]
+
+    The graphs in their respective classes and node counts are exhaustive,
+    with the exception of "distance_regular" graphs.
 
     Parameters
     ----------
