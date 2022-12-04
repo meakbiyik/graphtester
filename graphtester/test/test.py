@@ -6,7 +6,11 @@ import igraph as ig
 
 
 def weisfeiler_lehman_test(
-    G1: ig.Graph, G2: ig.Graph, edge_attr=None, node_attr=None, iterations=None
+    G1: ig.Graph,
+    G2: ig.Graph,
+    edge_attr: str | List[str] = None,
+    node_attr: str | List[str] = None,
+    iterations: int = None,
 ) -> bool:
     """Apply 1-Weisfeiler Lehman (1-WL) graph isomorphism test.
 
@@ -18,10 +22,10 @@ def weisfeiler_lehman_test(
         The first graph.
     G2 : ig.Graph
         The second graph.
-    edge_attr : str, optional
-        The edge attribute to use for the edge labels.
-    node_attr : str, optional
-        The node attribute to use for the node labels.
+    edge_attr : str | List[str], optional
+        The edge attribute(s) to use for the edge labels.
+    node_attr : str | List[str], optional
+        The node attribute(s) to use for the node labels.
     iterations : int, optional
         The number of iterations to run. If None (default), run (n-1) iterations,
         where n is the number of vertices of inputs. See [1] for more details.
@@ -62,10 +66,10 @@ def k_weisfeiler_lehman_test(
     G1: ig.Graph,
     G2: ig.Graph,
     k: int,
-    edge_attr=None,
-    node_attr=None,
-    iterations=None,
-    folklore=False,
+    edge_attr: str | List[str] = None,
+    node_attr: str | List[str] = None,
+    iterations: int = None,
+    folklore: bool = False,
 ):
     """Apply k-Weisfeiler Lehman (k-WL) graph isomorphism test.
 
@@ -83,6 +87,10 @@ def k_weisfeiler_lehman_test(
         The second graph.
     k : int
         Degree of the WL test, 2 <= k <= 6.
+    edge_attr : str | List[str], optional
+        The edge attribute(s) to use for the edge labels.
+    node_attr : str | List[str], optional
+        The node attribute(s) to use for the node labels.
     iterations : int, optional
         The number of iterations to run. If None (default), run (n**k-1) iterations,
         where n is the number of vertices of inputs. See [1] for more details.
@@ -107,8 +115,8 @@ def k_weisfeiler_lehman_test(
     if iterations is None:
         iterations = G1.vcount() ** k - 1
 
-    node_labels_g1 = _init_k_tuple_labels(G1, k, node_attr, edge_attr)
-    node_labels_g2 = _init_k_tuple_labels(G2, k, node_attr, edge_attr)
+    node_labels_g1 = _init_k_tuple_labels(G1, k, edge_attr, node_attr)
+    node_labels_g2 = _init_k_tuple_labels(G2, k, edge_attr, node_attr)
 
     for _ in range(iterations):
 
@@ -128,7 +136,11 @@ def k_weisfeiler_lehman_test(
 
 
 def weisfeiler_lehman_hash(
-    G: ig.Graph, edge_attr=None, node_attr=None, iterations=None
+    G: ig.Graph,
+    edge_attr: str | List[str] = None,
+    node_attr: str | List[str] = None,
+    iterations: int = None,
+    return_graph: bool = False,
 ):
     """Apply 1-Weisfeiler Lehman (1-WL) test to create a graph hash.
 
@@ -136,19 +148,25 @@ def weisfeiler_lehman_hash(
     ----------
     G : ig.Graph
         The graph.
-    edge_attr : str, optional
-        The edge attribute to use for the edge labels.
-    node_attr : str, optional
-        The node attribute to use for the node labels.
+    edge_attr : str | List[str], optional
+        The edge attribute(s) to use for the edge labels.
+    node_attr : str | List[str], optional
+        The node attribute(s) to use for the node labels.
     iterations : int, optional
         The maximum number of iterations to run. If None (default), run (n-1)
         iterations where n is the number of vertices of inputs. See [1] for
         more details.
+    return_graph : bool, optional
+        Whether to return a copy of the graph with the updated node labels.
+        By default False. This is useful to check the node labels, and run
+        more iterations on the same graph if needed.
 
     Returns
     -------
     str
         The hash of the graph.
+    ig.Graph, optional
+        The graph with updated node labels. Only returned if `return_graph` is True.
 
     References
     ----------
@@ -169,11 +187,23 @@ def weisfeiler_lehman_hash(
         if node_labels == prev_labels:
             break
 
-    return ",".join(sorted(node_labels))
+    if return_graph:
+        # Create a new graph with edge labels copied over, and node labels removed
+        G = G.copy()
+        node_attributes = G.vs.attributes()
+        for attr in node_attributes:
+            G.vs[attr] = None
+        G.vs["label"] = node_labels
+        return ";".join(sorted(node_labels)), G
+    else:
+        return ";".join(sorted(node_labels))
 
 
 def _init_k_tuple_labels(
-    G: ig.Graph, k: int, node_attr: str, edge_attr: str
+    G: ig.Graph,
+    k: int,
+    edge_attr: str | List[str] = None,
+    node_attr: str | List[str] = None,
 ) -> List[str]:
     """Initialize the k-tuple labels.
 
@@ -187,10 +217,10 @@ def _init_k_tuple_labels(
         The graph.
     k : int
         Degree of the k-WL test, 2 <= k <= 6.
-    node_attr : str
-        The node attribute to use for the node labels.
-    edge_attr : str
-        The edge attribute to use for the edge labels.
+    edge_attr : str | List[str], optional
+        The edge attribute(s) to use for the edge labels.
+    node_attr : str | List[str], optional
+        The node attribute(s) to use for the node labels.
 
     Returns
     -------
@@ -224,18 +254,24 @@ def _init_k_tuple_labels(
         additional_data.append(k_label_tuple_generator)
 
     if edge_attr:
+        if isinstance(edge_attr, str):
+            edge_attr = [edge_attr]
         k_edge_tuples = [
-            (str(attr) for attr in G.induced_subgraph(node_tuple).es[edge_attr])
+            (
+                str(attr)
+                for attr_name in edge_attr
+                for attr in G.induced_subgraph(node_tuple).es[attr_name]
+            )
             for node_tuple in k_vertex_tuple_generator
         ]
         additional_data.append(k_edge_tuples)
 
     if node_attr or edge_attr:
         k_tuple_labels = [
-            ";".join(
+            ":".join(
                 [
                     str(isoclass(G, node_tuple)),
-                    *(",".join(label_tuple) for label_tuple in label_tuples),
+                    *(",;".join(label_tuple) for label_tuple in label_tuples),
                 ]
             )
             for node_tuple, label_tuples in zip(
@@ -250,7 +286,9 @@ def _init_k_tuple_labels(
     return k_tuple_labels
 
 
-def _weisfeiler_lehman_step(G: ig.Graph, node_labels, edge_attr=None):
+def _weisfeiler_lehman_step(
+    G: ig.Graph, node_labels: List[str], edge_attr: str | List[str] = None
+):
     """Apply neighborhood aggregation to each node in the graph.
 
     Parameters
@@ -259,8 +297,8 @@ def _weisfeiler_lehman_step(G: ig.Graph, node_labels, edge_attr=None):
         The graph.
     node_labels : List[str]
         The node labels.
-    edge_attr : str, optional
-        The edge attribute to use for the edge labels.
+    edge_attr : str | List[str], optional
+        The edge attribute(s) to use for the edge labels.
 
     Returns
     -------
@@ -273,7 +311,9 @@ def _weisfeiler_lehman_step(G: ig.Graph, node_labels, edge_attr=None):
     ]
 
 
-def _k_weisfeiler_lehman_step(G: ig.Graph, tuple_labels, k: int, folklore: bool):
+def _k_weisfeiler_lehman_step(
+    G: ig.Graph, tuple_labels: List[str], k: int, folklore: bool
+):
     """Apply k-Weisfeiler Lehman (k-WL) step.
 
     Implementations are directly based on the paper [1].
@@ -306,7 +346,7 @@ def _k_weisfeiler_lehman_step(G: ig.Graph, tuple_labels, k: int, folklore: bool)
     if folklore:
         for node_tuple, tuple_label in k_tuple_map.items():
             neighborhood_label_list = [
-                ",".join(
+                ";".join(
                     sorted(
                         [
                             k_tuple_map[node_tuple[:i] + (node,) + node_tuple[i + 1 :]]
@@ -316,13 +356,13 @@ def _k_weisfeiler_lehman_step(G: ig.Graph, tuple_labels, k: int, folklore: bool)
                 )
                 for node in range(G.vcount())
             ]
-            new_label = ";".join(sorted(neighborhood_label_list + [tuple_label]))
+            new_label = ":".join(sorted(neighborhood_label_list + [tuple_label]))
             new_labels.append(new_label)
 
     else:
         for node_tuple, tuple_label in k_tuple_map.items():
             neighborhood_label_list = [
-                ",".join(
+                ";".join(
                     sorted(
                         [
                             k_tuple_map[node_tuple[:i] + (node,) + node_tuple[i + 1 :]]
@@ -332,14 +372,14 @@ def _k_weisfeiler_lehman_step(G: ig.Graph, tuple_labels, k: int, folklore: bool)
                 )
                 for i in range(k)
             ]
-            new_label = ";".join(sorted(neighborhood_label_list + [tuple_label]))
+            new_label = ":".join(sorted(neighborhood_label_list + [tuple_label]))
             new_labels.append(new_label)
 
     return new_labels
 
 
 def _init_node_labels(
-    G: ig.Graph, node_attr: str, use_degree: bool = True
+    G: ig.Graph, node_attr: str | List[str], use_degree: bool = True
 ) -> List[str]:
     """Initialize the node labels.
 
@@ -347,8 +387,8 @@ def _init_node_labels(
     ----------
     G : ig.Graph
         The graph.
-    node_attr : str
-        The node attribute to use as the node labels. If None and
+    node_attr : str | List[str]
+        The node attribute(s) to use as the node labels. If None and
         use_degree, use node degree.
     use_degree : bool
         Whether to use the node degree as part of the node labels.
@@ -360,15 +400,19 @@ def _init_node_labels(
         The node labels.
     """
     if node_attr:
+        if isinstance(node_attr, str):
+            node_attr = [node_attr]
+        attribute_labels = [G.vs[attr_name] for attr_name in node_attr]
         if use_degree:
             return [
-                str(attr) + str(deg)
-                for attr, deg in zip(
-                    G.vs.get_attribute_values(node_attr), G.vs.degree()
-                )
+                str(deg) + ":" + ";".join([str(attr) for attr in attributes])
+                for attributes, deg in zip(zip(*attribute_labels), G.vs.degree())
             ]
         else:
-            return [str(attr) for attr in G.vs.get_attribute_values(node_attr)]
+            return [
+                ";".join([str(attr) for attr in attributes])
+                for attributes in zip(*attribute_labels)
+            ]
 
     elif use_degree:
         return [str(deg) for deg in G.vs.degree()]
@@ -377,7 +421,12 @@ def _init_node_labels(
         return [""] * G.vcount()
 
 
-def _aggregate_neighborhood(G: ig.Graph, node_idx, node_labels, edge_attr=None):
+def _aggregate_neighborhood(
+    G: ig.Graph,
+    node_idx: int,
+    node_labels: List[str],
+    edge_attr: str | List[str] = None,
+):
     """Compute new labels for given node by aggregating the labels of each node's neighbors.
 
     Used for the 1-WL test.
@@ -390,8 +439,8 @@ def _aggregate_neighborhood(G: ig.Graph, node_idx, node_labels, edge_attr=None):
         The node index.
     node_labels : List[str]
         The node labels.
-    edge_attr : str, optional
-        The edge attribute to use for the edge labels.
+    edge_attr : str | List[str], optional
+        The edge attribute(s) to use for the edge labels.
 
     Returns
     -------
@@ -400,10 +449,12 @@ def _aggregate_neighborhood(G: ig.Graph, node_idx, node_labels, edge_attr=None):
     """
     node_neighbors = G.neighbors(node_idx)
     if edge_attr is not None:
+        if isinstance(edge_attr, str):
+            edge_attr = [edge_attr]
         label_list = [""] * len(node_neighbors)
         for idx, nbr in enumerate(node_neighbors):
             edge = G.es.find(_between=((node_idx,), (nbr,)))
-            prefix = str(edge[edge_attr])
+            prefix = ":".join([str(edge[attr]) for attr in edge_attr])
             label_list[idx] = prefix + ";" + node_labels[nbr]
     else:
         label_list = [node_labels[nbr] for nbr in node_neighbors]

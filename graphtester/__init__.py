@@ -13,7 +13,7 @@ from graphtester.label import (
     VERTEX_LABELING_METHODS,
     label_graph,
 )
-from graphtester.test import (
+from graphtester.test.test import (
     k_weisfeiler_lehman_test,
     weisfeiler_lehman_hash,
     weisfeiler_lehman_test,

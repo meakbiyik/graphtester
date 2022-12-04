@@ -147,12 +147,12 @@ results = pd.DataFrame(
             "Failure count": 111,
         },
         {
-            "Method": "1st subconstituent signatures + Edge betweenness",
+            "Method": "1st subconstituent signatures \n+ Edge betweenness",
             "Method class": "Ours",
             "Failure count": 14,
         },
         {
-            "Method": "2nd subconstituent signatures + Edge betweenness",
+            "Method": "2nd subconstituent signatures \n+ Edge betweenness",
             "Method class": "Ours",
             "Failure count": 8,
         },
@@ -171,7 +171,7 @@ results = pd.DataFrame(
 
 results["Success rate"] = (54403 - results["Failure count"]) / 54403
 
-fig, ax = plt.subplots(figsize=(12, 16))
+fig, ax = plt.subplots(figsize=(12, 8))
 sns.barplot(
     x="Method",
     y="Success rate",
