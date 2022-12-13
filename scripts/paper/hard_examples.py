@@ -3,7 +3,7 @@ import networkx as nx
 from matplotlib import pyplot as plt
 
 from graphtester import k_weisfeiler_lehman_test as kwl_test
-from graphtester import label_graph, produce
+from graphtester import label, produce
 from graphtester import weisfeiler_lehman_test as wl_test
 
 # Dodecahedron:
@@ -23,14 +23,14 @@ print(
     f"2-FWL test: {'failed' if kwl_test(g1, g2, k=2, folklore=True) else 'succeeded'}"
 )
 
-labeled_g1 = label_graph(g1, ["1st subconstituent signatures"])
-labeled_g2 = label_graph(g2, ["1st subconstituent signatures"])
+labeled_g1 = label(g1, ["1st subconstituent signatures"])
+labeled_g2 = label(g2, ["1st subconstituent signatures"])
 # Test (and again fail)
 labeled_wl_test = wl_test(labeled_g1, labeled_g2, "label", "label")
 print(f"1-WL test with signatures: " f"{'failed' if labeled_wl_test else 'succeeded'}")
 
-labeled_g1 = label_graph(g1, ["2nd subconstituent signatures"])
-labeled_g2 = label_graph(g2, ["2nd subconstituent signatures"])
+labeled_g1 = label(g1, ["2nd subconstituent signatures"])
+labeled_g2 = label(g2, ["2nd subconstituent signatures"])
 # Test (and again fail)
 labeled_wl_test = wl_test(labeled_g1, labeled_g2, "label", "label")
 print(
@@ -74,14 +74,14 @@ print(
     f"3-FWL test: {'failed' if kwl_test(g1, g2, k=3, folklore=True) else 'succeeded'}"
 )
 
-labeled_g1 = label_graph(g1, ["1st subconstituent signatures"])
-labeled_g2 = label_graph(g2, ["1st subconstituent signatures"])
+labeled_g1 = label(g1, ["1st subconstituent signatures"])
+labeled_g2 = label(g2, ["1st subconstituent signatures"])
 # Test (and again fail)
 labeled_wl_test = wl_test(labeled_g1, labeled_g2, "label", "label")
 print(f"1-WL test with signatures: " f"{'failed' if labeled_wl_test else 'succeeded'}")
 
-labeled_g1 = label_graph(g1, ["2nd subconstituent signatures"])
-labeled_g2 = label_graph(g2, ["2nd subconstituent signatures"])
+labeled_g1 = label(g1, ["2nd subconstituent signatures"])
+labeled_g2 = label(g2, ["2nd subconstituent signatures"])
 # Test (and again fail)
 labeled_wl_test = wl_test(labeled_g1, labeled_g2, "label", "label")
 print(

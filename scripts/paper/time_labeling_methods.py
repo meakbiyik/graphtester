@@ -8,7 +8,7 @@ import seaborn as sns
 import tqdm
 from matplotlib import pyplot as plt
 
-from graphtester import GRAPH_CLASS_DESCRIPTIONS, label_graph, produce
+from graphtester import GRAPH_CLASS_DESCRIPTIONS, label, produce
 
 RESULTS_DIR = Path(__file__).parents[1] / "results"
 RNG = np.random.default_rng(0)
@@ -35,9 +35,7 @@ for cls in classes:
         shuffled_graphs = RNG.permutation(graphs)
         for graph in shuffled_graphs[:count]:
             for method in methods:
-                time = (
-                    timeit.timeit(lambda: label_graph(graph, method), number=rep) / rep
-                )
+                time = timeit.timeit(lambda: label(graph, method), number=rep) / rep
                 times.append(
                     {
                         "Graph class": GRAPH_CLASS_DESCRIPTIONS[cls],

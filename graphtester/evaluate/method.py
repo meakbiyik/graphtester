@@ -1,4 +1,4 @@
-"""Run 1-WL tests for given labeling methods and graph classes."""
+"""Run k-WL tests for given labeling methods and graph classes."""
 import os
 import time
 from typing import Dict, List, Tuple, Union
@@ -7,7 +7,7 @@ import igraph as ig
 import numpy as np
 
 from graphtester import k_weisfeiler_lehman_test as kwl_test
-from graphtester import label_graph
+from graphtester import label
 from graphtester import weisfeiler_lehman_test as wl_test
 
 
@@ -99,11 +99,11 @@ def evaluate_method(
                         sum(graph_pair_indices[f"{cls}_{vcount}"], ())
                     )
                     graphs = [
-                        label_graph(g, labeling) if idx in relevant_graphs else g
+                        label(g, labeling) if idx in relevant_graphs else g
                         for idx, g in enumerate(graphs)
                     ]
                 else:
-                    graphs = [label_graph(g, labeling) for g in graphs]
+                    graphs = [label(g, labeling) for g in graphs]
 
             if graph_pair_indices is not None:
                 fail_count, class_failures = _test_indexed_graphs(

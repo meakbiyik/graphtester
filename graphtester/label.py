@@ -11,7 +11,7 @@ from graphtester.test import (
 )
 
 
-def label_graph(graph: ig.Graph, methods: List[str], copy: bool = True) -> ig.Graph:
+def label(graph: ig.Graph, methods: List[str], copy: bool = True) -> ig.Graph:
     """Deterministically label and rewire a graph.
 
     Uses the given provided methods. Compress the

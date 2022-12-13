@@ -175,7 +175,9 @@ def weisfeiler_lehman_hash(
     if iterations is None:
         iterations = G.vcount() - 1
 
-    node_labels = _init_node_labels(G, node_attr)
+    # Initialize node labels with degree if no iteration limit is set
+    # since this is identical to starting at iteration=1
+    node_labels = _init_node_labels(G, node_attr, use_degree=iterations is None)
 
     for _ in range(iterations):
 
