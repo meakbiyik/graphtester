@@ -6,9 +6,9 @@ from typing import Dict, List, Tuple, Union
 import igraph as ig
 import numpy as np
 
-from graphtester import k_weisfeiler_lehman_test as kwl_test
-from graphtester import label
-from graphtester import weisfeiler_lehman_test as wl_test
+from graphtester.label import label
+from graphtester.test import k_weisfeiler_lehman_test as kwl_test
+from graphtester.test import weisfeiler_lehman_test as wl_test
 
 
 def evaluate_method(

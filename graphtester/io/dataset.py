@@ -34,22 +34,46 @@ class Dataset:
         self.name = name if name is not None else "Unnamed Dataset"
 
     @classmethod
-    def from_dgl(cls, dgl_dataset, classes: List[int] = None) -> "Dataset":
+    def from_dgl(cls, dgl_dataset, labels: List[int] = None) -> "Dataset":
         """Create a Dataset from a DGL dataset.
 
         Parameters
         ----------
         dgl_dataset : DGLDataset
             The DGL dataset.
+        labels : List[int], optional
+            The labels of the graphs. If None (default), the labels in the
+            dataset are used, if available. If the dataset is already labeled,
+            the labels override the labels in the dataset.
 
         Returns
         -------
         dataset : Dataset
             The Dataset.
         """
-        graphs = [ig.Graph.from_networks(graph.to_networkx()) for graph in dgl_dataset]
-        labels = dgl_dataset.labels if classes is None else classes
-        return cls(graphs, labels, dgl_dataset.name)
+        node_attr = list(dgl_dataset[0][0].ndata.keys())
+        edge_attr = list(dgl_dataset[0][0].edata.keys())
+        graphs, _labels = zip(
+            *[
+                (
+                    ig.Graph.from_networkx(graph.to_networkx(node_attr, edge_attr)),
+                    int(label),
+                )
+                for graph, label in dgl_dataset
+            ]
+        )
+        if labels is None:
+            labels = _labels
+        # Remove superfluous attributes and convert tensors to lists
+        attrs_to_remove = ["_ID", "id", "_nx_name"]
+        for graph in graphs:
+            for attr in attrs_to_remove:
+                if attr in graph.vs.attributes():
+                    del graph.vs[attr]
+            for attr in attrs_to_remove:
+                if attr in graph.es.attributes():
+                    del graph.es[attr]
+        return cls(list(graphs), list(labels), dgl_dataset.name)
 
     @classmethod
     def from_pickle(cls, path: str) -> "Dataset":

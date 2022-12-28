@@ -1,5 +1,6 @@
 """Generate random non-isomorphic graphs."""
-from graphtester.evaluate.method import evaluate, evaluate_method
+from graphtester.evaluate.dataset import evaluate
+from graphtester.evaluate.method import evaluate_method
 from graphtester.io.load import load
 from graphtester.io.produce import (
     FAST_GRAPH_CLASSES,

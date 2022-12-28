@@ -167,6 +167,8 @@ def weisfeiler_lehman_hash(
         The hash of the graph.
     ig.Graph, optional
         The graph with updated node labels. Only returned if `return_graph` is True.
+        The label is stored in the node attribute "label", other node attributes are
+        removed.
 
     References
     ----------
@@ -184,7 +186,7 @@ def weisfeiler_lehman_hash(
         new_labels = _weisfeiler_lehman_step(G, node_labels, edge_attr=edge_attr)
 
         prev_labels = node_labels
-        node_labels = _reassign_labels(new_labels)
+        node_labels = new_labels
 
         if node_labels == prev_labels:
             break
@@ -450,7 +452,7 @@ def _aggregate_neighborhood(
         The new label.
     """
     node_neighbors = G.neighbors(node_idx)
-    if edge_attr is not None:
+    if edge_attr:
         if isinstance(edge_attr, str):
             edge_attr = [edge_attr]
         label_list = [""] * len(node_neighbors)

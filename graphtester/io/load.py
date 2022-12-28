@@ -15,24 +15,40 @@ import networkx as nx
 from graphtester.io.dataset import Dataset
 
 DATASETS = {
+    # Homebrewed datasets
     "GT": Path(__file__).parent / "datasets" / "GT.pkl",
     "GT-small": Path(__file__).parent / "datasets" / "GT-small.pkl",
+    # Small molecules - TU
+    "AIDS": lambda dgl: dgl.data.TUDataset("AIDS"),
+    "BZR": lambda dgl: dgl.data.TUDataset("BZR"),
+    "COX2": lambda dgl: dgl.data.TUDataset("COX2"),
+    "DHFR": lambda dgl: dgl.data.TUDataset("DHFR"),
     "MUTAG": lambda dgl: dgl.data.TUDataset("MUTAG"),
+    "NCI1": lambda dgl: dgl.data.TUDataset("NCI1"),
+    "NCI109": lambda dgl: dgl.data.TUDataset("NCI109"),
+    # Bioinformatics - TU
     "ENZYMES": lambda dgl: dgl.data.TUDataset("ENZYMES"),
     "DD": lambda dgl: dgl.data.TUDataset("DD"),
-    "COLLAB": lambda dgl: dgl.data.TUDataset("COLLAB"),
     "PROTEINS": lambda dgl: dgl.data.TUDataset("PROTEINS"),
+    # Social networks - TU
+    "IMDB-BINARY": lambda dgl: dgl.data.TUDataset("IMDB-BINARY"),
+    "IMDB-MULTI": lambda dgl: dgl.data.TUDataset("IMDB-MULTI"),
+    "COLLAB": lambda dgl: dgl.data.TUDataset("COLLAB"),
+    "REDDIT-BINARY": lambda dgl: dgl.data.TUDataset("REDDIT-BINARY"),
+    "REDDIT-MULTI-5K": lambda dgl: dgl.data.TUDataset("REDDIT-MULTI-5K"),
 }
 
 
 def load(
-    name_or_graphs: str | list, classes: List = None, dataset_name: str = None
+    name_or_graphs: "str | list | dgl.data.DGLDataset",  # type: ignore # noqa: F821
+    classes: List = None,
+    dataset_name: str = None,
 ) -> Dataset:
     """Load graphs from a dataset or a list of graphs.
 
     Parameters
     ----------
-    name_or_graphs : str or List[Union[nx.Graph, ig.Graph]]
+    name_or_graphs : str or List[Union[nx.Graph, ig.Graph, dgl.data.DGLDataset]]
         The name of the dataset to load, or a list of graphs.
     classes : List[any], optional
         The classes of the graphs for classification tasks. If None (default),
@@ -45,8 +61,10 @@ def load(
     """
     if isinstance(name_or_graphs, str):
         dataset = _load_dataset(name_or_graphs, classes)
-    else:
+    elif isinstance(name_or_graphs, list):
         dataset = _load_graphs(name_or_graphs, classes)
+    else:
+        dataset = Dataset.from_dgl(name_or_graphs)
 
     if dataset_name is not None:
         dataset.name = dataset_name
