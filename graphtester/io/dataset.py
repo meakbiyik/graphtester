@@ -5,6 +5,7 @@ import pickle
 from typing import List, Tuple
 
 import igraph as ig
+import numpy as np
 
 
 class Dataset:
@@ -51,6 +52,8 @@ class Dataset:
         dataset : Dataset
             The Dataset.
         """
+        import dgl.backend as F
+
         node_attr = list(dgl_dataset[0][0].ndata.keys())
         edge_attr = list(dgl_dataset[0][0].edata.keys())
         graphs, _labels = zip(
@@ -73,6 +76,14 @@ class Dataset:
             for attr in attrs_to_remove:
                 if attr in graph.es.attributes():
                     del graph.es[attr]
+            for attr in graph.vs.attributes():
+                graph.vs[attr] = [
+                    np.squeeze(F.asnumpy(x)).tolist() for x in graph.vs[attr]
+                ]
+            for attr in graph.es.attributes():
+                graph.es[attr] = [
+                    np.squeeze(F.asnumpy(x)).tolist() for x in graph.es[attr]
+                ]
         return cls(list(graphs), list(labels), dgl_dataset.name)
 
     @classmethod
@@ -241,7 +252,7 @@ class Dataset:
         """
         return not self.__eq__(other)
 
-    def __copy__(self) -> "Dataset":
+    def copy(self) -> "Dataset":
         """Get a copy of the dataset.
 
         Returns
@@ -250,6 +261,6 @@ class Dataset:
             A copy of the dataset.
         """
         return Dataset(
-            graphs=self.graphs.copy(),
+            graphs=[graph.copy() for graph in self.graphs],
             labels=self.labels.copy() if self.labels is not None else None,
         )

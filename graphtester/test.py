@@ -196,7 +196,7 @@ def weisfeiler_lehman_hash(
         G = G.copy()
         node_attributes = G.vs.attributes()
         for attr in node_attributes:
-            G.vs[attr] = None
+            del G.vs[attr]
         G.vs["label"] = node_labels
         return ";".join(sorted(node_labels)), G
     else:

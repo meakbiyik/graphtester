@@ -1,16 +1,35 @@
 """Demo script for the graphtester package."""
 import graphtester as gt
 
-# Load the dataset
-dataset = gt.load("MUTAG")
-print(dataset)
+datasets_to_evaluate = [
+    "AIDS",
+    "BZR",
+    "COX2",
+    "DHFR",
+    "MUTAG",
+    "NCI1",
+    "NCI109",
+    "ENZYMES",
+    "DD",
+    "PROTEINS",
+]
 
-# Evaluate the dataset
-results = gt.evaluate(dataset, ignore_node_features=False, ignore_edge_features=True)
-print(results)
+for dataset_name in datasets_to_evaluate:
+    print(f"Dataset: {dataset_name}")
 
-# Recommend features to add to the dataset
-recommendation = gt.recommend(dataset)
+    # Load the dataset
+    dataset = gt.load(dataset_name)
+    print(dataset)
 
-# Print the recommendation
-print(recommendation)
+    # Evaluate the dataset
+    results = gt.evaluate(dataset)
+    print(results)
+
+    if results.identifiability[1] == 1:
+        print("Dataset is fully identifiable")
+    else:
+        # Recommend features to add to the dataset
+        recommendation = gt.recommend(dataset)
+
+        # Print the recommendation
+        print(recommendation.as_dataframe())

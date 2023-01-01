@@ -195,7 +195,8 @@ def _count_substructure_vertices(
     of the substructure in the original graph, as a string label
     per vertex.
 
-    Implements the approach described in [1].
+    Implements the approach described in [1]. If the input graph
+    is directed, we first convert it to an undirected graph.
 
     Parameters
     ----------
@@ -218,6 +219,10 @@ def _count_substructure_vertices(
     """
     if substructure_vertex_orbits is None:
         substructure_vertex_orbits = _determine_vertex_orbits(substructure)
+
+    if graph.is_directed():
+        # this functions copies the graph
+        graph = graph.as_undirected()
 
     subisomorphisms = graph.get_subisomorphisms_lad(substructure)
 
@@ -298,6 +303,10 @@ def _count_substructure_edges(
     """
     if substructure_edge_orbits is None:
         substructure_edge_orbits = _determine_edge_orbits(substructure)
+
+    if graph.is_directed():
+        # this functions copies the graph
+        graph = graph.as_undirected()
 
     subisomorphisms = graph.get_subisomorphisms_lad(substructure)
 
@@ -511,7 +520,7 @@ VERTEX_LABELING_METHODS = {
     ],
     "Burt's constraint": lambda g: [str(round(h, 6)) for h in g.constraint()],
     "Betweenness centrality": lambda g: [str(round(h, 6)) for h in g.betweenness()],
-    "Marked WL hash  vertex label": _wl_hash_vertex_label,
+    "Marked WL hash vertex label": _wl_hash_vertex_label,
     "3-cycle count of vertices": lambda g: _count_substructure_vertices(
         g, SUBSTRUCTURES["3_cycle"], SUBSTRUCTURE_VERTEX_ORBITS["3_cycle"]
     ),

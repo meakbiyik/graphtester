@@ -1,5 +1,5 @@
 """Evaluate a Dataset."""
-
+import functools
 from collections import Counter
 from typing import Dict, List, Optional
 
@@ -38,12 +38,9 @@ class EvaluationResult:
         """Return a string representation of the object."""
         return f"EvaluationResult({self.dataset.name})"
 
-    def __str__(self):
-        """Create and return a tabular report of the evaluation.
-
-        Neatly formats the evaluation results in a tabular format with table
-        headers and rows, as well as borders. The table is returned as a string.
-        """
+    @functools.cache
+    def as_dataframe(self) -> pd.DataFrame:
+        """Create and return a tabular report of the evaluation."""
         report = pd.DataFrame(
             {
                 "Identifiability": self.identifiability,
@@ -54,7 +51,11 @@ class EvaluationResult:
         report.index.rename("Iteration", inplace=True)
         report.name = self.dataset.name
         report = report.round(4) * 100
-        return report.to_string()
+        return report
+
+    def __str__(self):
+        """Create and return a tabular report of the evaluation."""
+        return self.as_dataframe().to_string()
 
 
 def evaluate(

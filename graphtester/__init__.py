@@ -15,6 +15,7 @@ from graphtester.label import (
     VERTEX_LABELING_METHODS,
     label,
 )
+from graphtester.recommend import recommend
 from graphtester.test import (
     k_weisfeiler_lehman_test,
     weisfeiler_lehman_hash,
