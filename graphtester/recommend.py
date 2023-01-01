@@ -64,7 +64,14 @@ class RecommendationResult:
             df = pd.DataFrame(rows)
             # Drop features that are not in top 5 per feature count and state
             df = df.sort_values(
-                by=["Feature count", "Identifiability"], ascending=False
+                by=[
+                    "Feature count",
+                    "Identifiability",
+                    "Upper bound accuracy",
+                    "Isomorphism",
+                    "Feature name(s)",
+                ],
+                ascending=False,
             )
             df = df.groupby("Feature count").head(5).reset_index(drop=True)
             if idx != 0:
