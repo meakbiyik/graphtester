@@ -1,5 +1,4 @@
 """Evaluate a Dataset."""
-import functools
 from collections import Counter
 from typing import Dict, List, Optional
 
@@ -33,14 +32,16 @@ class EvaluationResult:
         self.identifiability = identifiability
         self.upper_bound_accuracy = upper_bound_accuracy
         self.isomorphism = isomorphism
+        self._dataframe = None
 
     def __repr__(self):
         """Return a string representation of the object."""
         return f"EvaluationResult({self.dataset.name})"
 
-    @functools.cache
     def as_dataframe(self) -> pd.DataFrame:
         """Create and return a tabular report of the evaluation."""
+        if self._dataframe is not None:
+            return self._dataframe
         report = pd.DataFrame(
             {
                 "Identifiability": self.identifiability,
@@ -51,6 +52,7 @@ class EvaluationResult:
         report.index.rename("Iteration", inplace=True)
         report.name = self.dataset.name
         report = report.round(4) * 100
+        self._dataframe = report
         return report
 
     def __str__(self):

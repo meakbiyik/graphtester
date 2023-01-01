@@ -1,6 +1,4 @@
 """Recommend additional features to add to a dataset."""
-import functools
-
 import pandas as pd
 
 from graphtester.evaluate.dataset import EvaluationResult, evaluate
@@ -30,14 +28,17 @@ class RecommendationResult:
         """
         self.dataset = dataset
         self.results = results
+        self._dataframe = None
 
     def __repr__(self) -> str:
         """Return the representation of a recommendation result."""
         return f"RecommendationResult(dataset={self.dataset})"
 
-    @functools.cache
     def as_dataframe(self) -> pd.DataFrame:
         """Return the recommendation result as a pandas dataframe."""
+        if self._dataframe is not None:
+            return self._dataframe
+
         rows_dict = {}
         # we will create different datasets for each state
         # before merging them into a single dataframe
@@ -84,6 +85,7 @@ class RecommendationResult:
         report.index.name = "Feature count"
         report.name = self.dataset.name
         report = report.round(4)
+        self._dataframe = report
         return report
 
     def __str__(self) -> str:

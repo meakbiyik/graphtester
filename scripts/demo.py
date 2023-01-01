@@ -26,7 +26,7 @@ for dataset_name in datasets_to_evaluate:
     print(results)
 
     if results.identifiability[1] == 1:
-        print("Dataset is fully identifiable")
+        print("Dataset is fully identifiable in one step, with node features.")
     else:
         # Recommend features to add to the dataset
         recommendation = gt.recommend(dataset)
