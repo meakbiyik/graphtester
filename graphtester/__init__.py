@@ -21,3 +21,4 @@ from graphtester.test import (
     weisfeiler_lehman_hash,
     weisfeiler_lehman_test,
 )
+from graphtester.transform import pretransform
