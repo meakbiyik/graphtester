@@ -53,7 +53,9 @@ class RecommendationResult:
                             f"{f} ({'n' if f in VERTEX_LABELING_METHODS else 'e'})"
                             for f in features
                         ]
-                    ),
+                    )
+                    if features
+                    else "-",
                     "Identifiability": results.identifiability[1],
                     "Upper bound accuracy": results.upper_bound_accuracy[1],
                     "Isomorphism": results.isomorphism,
@@ -72,7 +74,13 @@ class RecommendationResult:
                     "Isomorphism",
                     "Feature name(s)",
                 ],
-                ascending=False,
+                ascending=[
+                    True,
+                    False,
+                    False,
+                    False,
+                    False,
+                ],
             )
             df = df.groupby("Feature count").head(5).reset_index(drop=True)
             if idx != 0:
@@ -137,10 +145,10 @@ def recommend(
     max_feature_count = min(max_feature_count, len(features_to_test))
     results = {}
     for state in states_to_check:
-        previous_best_features = []
+        previous_best_features, previous_best_result = [], None
         for feature_count in range(
-            max_feature_count + 1
-        ):  # we also consider the no-additional-feature case
+            max_feature_count + 1  # we also consider the zero-feature case
+        ):
             best_feature, best_result = _evaluate_features(
                 dataset,
                 features_to_test,
@@ -156,9 +164,10 @@ def recommend(
                 best_result.identifiability[1] == 1
                 and best_result.upper_bound_accuracy[1] == 1
                 and best_result.isomorphism == 1
-            ):
-                # already at full efficiency
+            ) or not _result_is_better(best_result, previous_best_result):
+                # already at full efficiency or no improvement
                 break
+            previous_best_result = best_result
 
     return RecommendationResult(dataset, results)
 
