@@ -14,7 +14,7 @@ datasets_to_evaluate = [
     # "DHFR", -> fully identifiable
     "DHFR_MD",
     "ER_MD",
-    # "FRANKENSTEIN", -> too big
+    "FRANKENSTEIN",  # -> too big
     "Mutagenicity",
     "MUTAG",
     "NCI1",
@@ -53,7 +53,7 @@ def analyze_dataset(dataset_name: str):
         print("Dataset is fully identifiable in one step, with node features.")
     else:
         # Recommend features to add to the dataset
-        recommendation = gt.recommend(dataset, max_feature_count=2)
+        recommendation = gt.recommend(dataset, max_feature_count=3)
 
         # Print the recommendation
         print(recommendation.as_dataframe())
