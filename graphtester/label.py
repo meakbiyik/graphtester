@@ -577,9 +577,7 @@ VERTEX_LABELING_METHODS = {
 
 EDGE_LABELING_METHODS = {
     "Convergence degree": lambda g: [str(round(h, 6)) for h in g.convergence_degree()],
-    "Edge betweenness": lambda g: [
-        str(round(b, 6)) for b in g.edge_betweenness(directed=False)
-    ],
+    "Edge betweenness": lambda g: [str(round(b, 6)) for b in g.edge_betweenness()],
     "Marked WL hash edge label": _wl_hash_edge_label,
     "3-cycle count of edges": lambda g: _count_substructure_edges(
         g, SUBSTRUCTURES["3_cycle"], SUBSTRUCTURE_EDGE_ORBITS["3_cycle"]

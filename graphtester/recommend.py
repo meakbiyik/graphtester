@@ -121,7 +121,7 @@ def recommend(
     RecommendationResult
         The recommendation result.
     """
-    methods_to_test = _determine_methods_to_test(node_features, edge_features)
+    features_to_test = _determine_features_to_test(node_features, edge_features)
 
     has_node_features = bool(dataset.graphs[0].vertex_attributes())
     has_edge_features = bool(dataset.graphs[0].edge_attributes())
@@ -134,37 +134,71 @@ def recommend(
     if has_node_features and has_edge_features:
         states_to_check.append("With node and edge features")
 
-    max_feature_count = min(max_feature_count, len(methods_to_test))
+    max_feature_count = min(max_feature_count, len(features_to_test))
     results = {}
     for state in states_to_check:
         previous_best_features = []
-        for _ in range(max_feature_count):
-            best_feature, best_result = None, 0
-            for feature in methods_to_test:
-                test_dataset = dataset.copy()
-                features = (feature, *previous_best_features)
-                result = evaluate(
-                    test_dataset,
-                    additional_features=features,
-                    iterations=1,
-                    ignore_node_features=state == "Without node or edge features"
-                    or state == "With edge features",
-                    ignore_edge_features=state == "Without node or edge features"
-                    or state == "With node features",
-                )
-                results[(state, features)] = result
-                if result.identifiability[1] > best_result:
-                    best_feature, best_result = feature, result.identifiability[1]
-            previous_best_features.append(best_feature)
-            methods_to_test.remove(best_feature)
-            if best_result == 1:
+        for feature_count in range(
+            max_feature_count + 1
+        ):  # we also consider the no-additional-feature case
+            best_feature, best_result = _evaluate_features(
+                dataset,
+                features_to_test,
+                results,
+                state,
+                previous_best_features,
+                feature_count,
+            )
+            if best_feature is not None:
+                previous_best_features.append(best_feature)
+                features_to_test.remove(best_feature)
+            if (
+                best_result.identifiability[1] == 1
+                and best_result.upper_bound_accuracy[1] == 1
+                and best_result.isomorphism == 1
+            ):
                 # already at full efficiency
                 break
 
     return RecommendationResult(dataset, results)
 
 
-def _determine_methods_to_test(node_features: bool, edge_features: bool) -> list[str]:
+def _evaluate_features(
+    dataset, features_to_test, results, state, previous_best_features, feature_count
+):
+    best_feature, best_result = None, None
+    if feature_count == 0:
+        result = evaluate(
+            dataset.copy(),
+            additional_features=None,
+            iterations=1,
+            ignore_node_features=state == "Without node or edge features"
+            or state == "With edge features",
+            ignore_edge_features=state == "Without node or edge features"
+            or state == "With node features",
+        )
+        results[(state, tuple())] = result
+        best_result = result
+    else:
+        for feature in features_to_test:
+            test_dataset = dataset.copy()
+            features = (feature, *previous_best_features)
+            result = evaluate(
+                test_dataset,
+                additional_features=features,
+                iterations=1,
+                ignore_node_features=state == "Without node or edge features"
+                or state == "With edge features",
+                ignore_edge_features=state == "Without node or edge features"
+                or state == "With node features",
+            )
+            results[(state, features)] = result
+            if _result_is_better(result, best_result):
+                best_feature, best_result = feature, result
+    return best_feature, best_result
+
+
+def _determine_features_to_test(node_features: bool, edge_features: bool) -> list[str]:
     """Determine the methods to test for recommendation.
 
     Parameters
@@ -179,21 +213,55 @@ def _determine_methods_to_test(node_features: bool, edge_features: bool) -> list
     list[str]
         The methods to test.
     """
-    methods_to_test = []
+    features_to_test = []
     if node_features:
-        methods_to_test += [
+        features_to_test += [
             method
             for method in VERTEX_LABELING_METHODS
             if not method.startswith("Marked WL hash")
         ]
 
     if edge_features:
-        methods_to_test += [
+        features_to_test += [
             method
             for method in EDGE_LABELING_METHODS
             if not method.startswith("Marked WL hash")
         ]
         # No need to check node-reduced edge features
-        methods_to_test = [
-            method for method in methods_to_test if not method.endswith("as node label")
+        features_to_test = [
+            method
+            for method in features_to_test
+            if not method.endswith("as node label")
         ]
+
+    return features_to_test
+
+
+def _result_is_better(result: EvaluationResult, best_result: EvaluationResult) -> bool:
+    """Check whether a result is better than another.
+
+    Parameters
+    ----------
+    result : EvaluationResult
+        The result to check.
+    best_result : EvaluationResult
+        The best result so far.
+
+    Returns
+    -------
+    bool
+        True if the result is better than the best result, False otherwise.
+    """
+    return (
+        best_result is None
+        or result.identifiability[1] > best_result.identifiability[1]
+        or (
+            result.identifiability[1] == best_result.identifiability[1]
+            and result.upper_bound_accuracy[1] > best_result.upper_bound_accuracy[1]
+        )
+        or (
+            result.identifiability[1] == best_result.identifiability[1]
+            and result.upper_bound_accuracy[1] == best_result.upper_bound_accuracy[1]
+            and result.isomorphism > best_result.isomorphism
+        )
+    )
