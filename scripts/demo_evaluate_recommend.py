@@ -14,7 +14,7 @@ datasets_to_evaluate = [
     # "DHFR", -> fully identifiable
     "DHFR_MD",
     "ER_MD",
-    "FRANKENSTEIN",  # -> too big
+    # "FRANKENSTEIN", -> too big
     "Mutagenicity",
     "MUTAG",
     "NCI1",
@@ -28,9 +28,9 @@ datasets_to_evaluate = [
     "PROTEINS",
     "IMDB-BINARY",
     "IMDB-MULTI",
-    "COLLAB",
+    # "COLLAB", -> too big
     "REDDIT-BINARY",
-    "REDDIT-MULTI-5K",
+    # "REDDIT-MULTI-5K", -> too big
 ]
 
 
