@@ -20,8 +20,37 @@ dataset = TUDataset(
 )
 
 print(dataset[0])
-print(dataset[0]["_Edge betweenness"])
-print(dataset[0]["_Eigenvector centrality"])
+print(dataset[0]["_edge_betweenness"])
+print(dataset[0]["_eigenvector_centrality"])
+
+# remove the pretransformed dataset from the folder
+shutil.rmtree(SCRIPT_PATH / "data" / "MUTAG", ignore_errors=True)
+
+dataset = TUDataset(
+    root=SCRIPT_PATH / "data" / "MUTAG",
+    name="MUTAG",
+    pre_transform=gt.pretransform(
+        features=["Closeness centrality", "Eigenvector centrality"],
+        feature_names="feature",
+    ),
+)
+
+print(dataset[0])
+print(dataset[0].feature.shape)
+
+# remove the pretransformed dataset from the folder
+shutil.rmtree(SCRIPT_PATH / "data" / "MUTAG", ignore_errors=True)
+
+dataset = TUDataset(
+    root=SCRIPT_PATH / "data" / "MUTAG",
+    name="MUTAG",
+    pre_transform=gt.pretransform(
+        features=["Closeness centrality", "Eigenvector centrality"], feature_names="x"
+    ),
+)
+
+print(dataset[0])
+print(dataset[0].x.shape)
 
 # remove the pretransformed dataset from the folder
 shutil.rmtree(SCRIPT_PATH / "data" / "MUTAG", ignore_errors=True)
@@ -36,10 +65,10 @@ dataset = TUDataset(
 )
 
 print(dataset[0])
-print(dataset[0]["_Closeness centrality"])
-print(dataset[0]["_Eigenvector centrality"])
-print(dataset[1]["_Closeness centrality"])
-print(dataset[1]["_Eigenvector centrality"])
+print(dataset[0]["_closeness_centrality"])
+print(dataset[0]["_eigenvector_centrality"])
+print(dataset[1]["_closeness_centrality"])
+print(dataset[1]["_eigenvector_centrality"])
 
 # remove the pretransformed dataset from the folder
 shutil.rmtree(SCRIPT_PATH / "data" / "MUTAG", ignore_errors=True)
