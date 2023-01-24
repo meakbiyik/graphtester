@@ -97,6 +97,7 @@ def pretransform(  # noqa: C901
                     hashmap[v] = len(hashmap)
             vals = [hashmap[v] for v in zip(*value_lists)]
             data[encoded_feature_name] = torch.tensor(vals).view(-1, 1)
+            data.x = torch.cat((data.x, data[encoded_feature_name]), 1)
 
         return data
 
