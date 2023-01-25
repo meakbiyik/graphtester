@@ -55,13 +55,11 @@ def test(model, loader, device):
             correct += pred.eq(data.y).sum().item()
     return correct / len(loader.dataset)
 
-def train(dataset, model):
+def train(dataset, model, batch_size=32):
     torch.manual_seed(0)
     np.random.seed(0)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'Device: {device}')
-    
-    batch_size = 4
 
     acc = []
     splits = separate_data(len(dataset), seed=0)

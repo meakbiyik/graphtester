@@ -9,11 +9,12 @@ from torch_geometric.nn import GINConv, global_add_pool
 
 
 class GNN(nn.Module):
-    def __init__(self, num_features, num_classes, hidden_units, dropout, conv=GINConv):
+    def __init__(self, num_features, num_classes, hidden_units, dropout):
         super(GNN, self).__init__()
 
         dim = hidden_units
         self.dropout = dropout
+        conv = GINConv
 
         self.num_layers = 4
 
