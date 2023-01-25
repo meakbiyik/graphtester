@@ -34,7 +34,7 @@ class RecommendationResult:
         """Return the representation of a recommendation result."""
         return f"RecommendationResult(dataset={self.dataset})"
 
-    def as_dataframe(self) -> pd.DataFrame:
+    def as_dataframe(self) -> pd.DataFrame:  # noqa: C901
         """Return the recommendation result as a pandas dataframe."""
         if self._dataframe is not None:
             return self._dataframe
@@ -45,42 +45,39 @@ class RecommendationResult:
         for (state, features), results in self.results.items():
             if state not in rows_dict:
                 rows_dict[state] = []
-            rows_dict[state].append(
-                {
-                    "Feature count": len(features),
-                    "Feature name(s)": " + ".join(
-                        [
-                            f"{f} ({'n' if f in VERTEX_LABELING_METHODS else 'e'})"
-                            for f in features
-                        ]
-                    )
-                    if features
-                    else "-",
-                    "Identifiability": results.identifiability[1],
-                    "Upper bound accuracy": results.upper_bound_accuracy[1],
-                    "Isomorphism": results.isomorphism,
-                }
-            )
+            data = {
+                "Feature count": len(features),
+                "Feature name(s)": " + ".join(
+                    [
+                        f"{f} ({'n' if f in VERTEX_LABELING_METHODS else 'e'})"
+                        for f in features
+                    ]
+                )
+                if features
+                else "-",
+            }
+            if results.identifiability is not None:
+                data["1-WL-Identifiability"] = results.identifiability[1]
+            if results.upper_bound_accuracy is not None:
+                data["Upper bound accuracy"] = results.upper_bound_accuracy[1]
+            if results.isomorphism is not None:
+                data["Isomorphism"] = results.isomorphism
+            rows_dict[state].append(data)
 
         dataframes = []
         for idx, (state, rows) in enumerate(rows_dict.items()):
             df = pd.DataFrame(rows)
             # Drop features that are not in top 5 per feature count and state
+            sort_by = [("Feature count", True)]
+            if "1-WL-Identifiability" in df.columns:
+                sort_by.append(("1-WL-Identifiability", False))
+            if "Upper bound accuracy" in df.columns:
+                sort_by.append(("Upper bound accuracy", False))
+            if "Isomorphism" in df.columns:
+                sort_by.append(("Isomorphism", False))
+            sort_by.append(("Feature name(s)", False))
             df = df.sort_values(
-                by=[
-                    "Feature count",
-                    "Identifiability",
-                    "Upper bound accuracy",
-                    "Isomorphism",
-                    "Feature name(s)",
-                ],
-                ascending=[
-                    True,
-                    False,
-                    False,
-                    False,
-                    False,
-                ],
+                by=[by for by, _ in sort_by], ascending=[asc for _, asc in sort_by]
             )
             df = df.groupby("Feature count").head(5).reset_index(drop=True)
             if idx != 0:
@@ -102,7 +99,11 @@ class RecommendationResult:
 
 
 def recommend(
-    dataset: Dataset, max_feature_count=3, node_features=True, edge_features=True
+    dataset: Dataset,
+    metrics: list[str],
+    max_feature_count=3,
+    node_features=True,
+    edge_features=True,
 ) -> RecommendationResult:
     """Recommend additional features (methods) to add to a dataset.
 
@@ -117,6 +118,8 @@ def recommend(
     ----------
     dataset : Dataset
         The dataset to recommend features for.
+    metrics : list[str]
+        The metrics to evaluate the dataset on.
     max_feature_count : int, optional
         The maximum number of features to combine into a set, by default 3
     node_features : bool, optional
@@ -151,6 +154,7 @@ def recommend(
         ):
             best_feature, best_result = _evaluate_features(
                 dataset,
+                metrics,
                 features_to_test,
                 results,
                 state,
@@ -161,10 +165,16 @@ def recommend(
                 previous_best_features.append(best_feature)
                 features_to_test.remove(best_feature)
             if (
-                best_result.identifiability[1] == 1
-                and best_result.upper_bound_accuracy[1] == 1
-                and best_result.isomorphism == 1
-            ) or not _result_is_better(best_result, previous_best_result):
+                (
+                    "identifiability" not in metrics
+                    or best_result.identifiability[1] == 1
+                )
+                and (
+                    "upper_bound_accuracy" not in metrics
+                    or best_result.upper_bound_accuracy[1] == 1
+                )
+                and ("isomorphism" not in metrics or best_result.isomorphism == 1)
+            ) or not _result_is_better(best_result, previous_best_result, metrics):
                 # already at full efficiency or no improvement
                 break
             previous_best_result = best_result
@@ -173,12 +183,19 @@ def recommend(
 
 
 def _evaluate_features(
-    dataset, features_to_test, results, state, previous_best_features, feature_count
+    dataset,
+    metrics,
+    features_to_test,
+    results,
+    state,
+    previous_best_features,
+    feature_count,
 ):
     best_feature, best_result = None, None
     if feature_count == 0:
         result = evaluate(
             dataset.copy(),
+            metrics=metrics,
             additional_features=None,
             iterations=1,
             ignore_node_features=state == "Without node or edge features"
@@ -194,6 +211,7 @@ def _evaluate_features(
             features = (feature, *previous_best_features)
             result = evaluate(
                 test_dataset,
+                metrics=metrics,
                 additional_features=features,
                 iterations=1,
                 ignore_node_features=state == "Without node or edge features"
@@ -202,7 +220,7 @@ def _evaluate_features(
                 or state == "With node features",
             )
             results[(state, features)] = result
-            if _result_is_better(result, best_result):
+            if _result_is_better(result, best_result, metrics):
                 best_feature, best_result = feature, result
     return best_feature, best_result
 
@@ -246,7 +264,9 @@ def _determine_features_to_test(node_features: bool, edge_features: bool) -> lis
     return features_to_test
 
 
-def _result_is_better(result: EvaluationResult, best_result: EvaluationResult) -> bool:
+def _result_is_better(
+    result: EvaluationResult, best_result: EvaluationResult, metrics: list[str]
+) -> bool:
     """Check whether a result is better than another.
 
     Parameters
@@ -255,6 +275,8 @@ def _result_is_better(result: EvaluationResult, best_result: EvaluationResult) -
         The result to check.
     best_result : EvaluationResult
         The best result so far.
+    metrics : list[str]
+        The metrics to evaluate the dataset on.
 
     Returns
     -------
@@ -263,14 +285,32 @@ def _result_is_better(result: EvaluationResult, best_result: EvaluationResult) -
     """
     return (
         best_result is None
-        or result.identifiability[1] > best_result.identifiability[1]
         or (
-            result.identifiability[1] == best_result.identifiability[1]
-            and result.upper_bound_accuracy[1] > best_result.upper_bound_accuracy[1]
+            "identifiability" in metrics
+            and result.identifiability[1] > best_result.identifiability[1]
         )
         or (
-            result.identifiability[1] == best_result.identifiability[1]
-            and result.upper_bound_accuracy[1] == best_result.upper_bound_accuracy[1]
-            and result.isomorphism > best_result.isomorphism
+            (
+                "identifiability" not in metrics
+                or result.identifiability[1] == best_result.identifiability[1]
+            )
+            and (
+                "upper_bound_accuracy" in metrics
+                and result.upper_bound_accuracy[1] > best_result.upper_bound_accuracy[1]
+            )
+        )
+        or (
+            (
+                "identifiability" not in metrics
+                or result.identifiability[1] == best_result.identifiability[1]
+            )
+            and (
+                "upper_bound_accuracy" not in metrics
+                or result.upper_bound_accuracy[1] == best_result.upper_bound_accuracy[1]
+            )
+            and (
+                "isomorphism" in metrics
+                and result.isomorphism > best_result.isomorphism
+            )
         )
     )

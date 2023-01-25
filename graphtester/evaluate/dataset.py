@@ -18,6 +18,7 @@ class EvaluationResult:
         dataset: Dataset,
         identifiability: Dict[int, float] = None,
         upper_bound_accuracy: Dict[int, float] = None,
+        upper_bound_accuracy_node: Dict[int, float] = None,
         isomorphism: float = None,
     ):
         """Initialize an EvaluationResult object.
@@ -28,9 +29,9 @@ class EvaluationResult:
             The dataset that was evaluated.
         """
         self.dataset = dataset
-        self._dataset_is_labeled = dataset.is_labeled
         self.identifiability = identifiability
         self.upper_bound_accuracy = upper_bound_accuracy
+        self.upper_bound_accuracy_node = upper_bound_accuracy_node
         self.isomorphism = isomorphism
         self._dataframe = None
 
@@ -42,13 +43,16 @@ class EvaluationResult:
         """Create and return a tabular report of the evaluation."""
         if self._dataframe is not None:
             return self._dataframe
-        report = pd.DataFrame(
-            {
-                "Identifiability": self.identifiability,
-                "Upper Bound Accuracy": self.upper_bound_accuracy,
-                "Isomorphism": self.isomorphism,
-            }
-        )
+        data = {}
+        if self.identifiability is not None:
+            data["1-WL-identifiability"] = self.identifiability
+        if self.isomorphism is not None:
+            data["Isomorphism"] = self.isomorphism
+        if self.upper_bound_accuracy is not None:
+            data["Upper bound accuracy"] = self.upper_bound_accuracy
+        if self.upper_bound_accuracy_node is not None:
+            data["Upper bound accuracy (node labels)"] = self.upper_bound_accuracy_node
+        report = pd.DataFrame(data)
         report.index.rename("Iteration", inplace=True)
         report.name = self.dataset.name
         report = report.round(4) * 100
@@ -73,12 +77,18 @@ def evaluate(
     This method analyzes how "hard" a dataset is to classify from 1-WL perspective.
     It does so by computing the following metrics:
         1. 1-WL-identifiability: the percentage of graphs that can be uniquely
-            identified with 1-WL algorithm at k iterations.
+            identified with 1-WL algorithm at k iterations. Calculated if
+            len(dataset) > 0.
         2. Upper bound accuracy: the upper bound accuracy of 1-WL algorithm at
-            k iterations for labeled datasets, considering majority vote.
-        3. Isomorphism: the percentage of graphs that are isomorphic to some
+            k iterations for labeled datasets, considering majority vote. Calculated
+            if len(dataset) > 0.
+        3. Upper bound accuracy (node labels): the upper bound accuracy of 1-WL
+            algorithm at k iterations for labeled datasets, considering majority
+            vote of node labels for node classification tasks. Calculated if
+            node_labels of dataset is not None.
+        4. Isomorphism: the percentage of graphs that are isomorphic to some
             other graph in the dataset. This is a measure of how much the
-            dataset is redundant.
+            dataset is redundant. Calculated if len(dataset) > 0.
 
     The analysis admits additional structural features, which are computed for each
     graph and added as node and/or edge feature.
@@ -100,6 +110,7 @@ def evaluate(
         Currently, the following metrics are supported:
             - "identifiability": 1-WL-identifiability
             - "upper_bound_accuracy": Upper bound accuracy
+            - "upper_bound_accuracy_node": Upper bound accuracy (node labels)
             - "isomorphism": Isomorphism
     iterations : int, optional
         The number of iterations to run 1-WL for, by default 3
@@ -110,34 +121,27 @@ def evaluate(
         The evaluation results object.
     """
     if metrics is None:
-        metrics = ["identifiability", "upper_bound_accuracy", "isomorphism"]
+        metrics = _init_metrics(dataset)
 
     graphs = dataset.graphs
     if ignore_node_features or ignore_edge_features:
-        graphs = [
-            ig.Graph(
-                n=graph.vcount(),
-                edges=graph.get_edgelist(),
-                directed=graph.is_directed(),
-                vertex_attrs={
-                    attr: graph.vs[attr] for attr in graph.vertex_attributes()
-                }
-                if not ignore_node_features
-                else {},
-                edge_attrs={attr: graph.es[attr] for attr in graph.edge_attributes()}
-                if not ignore_edge_features
-                else {},
-            )
-            for graph in graphs
-        ]
+        graphs = _clean_graphs(ignore_node_features, ignore_edge_features, graphs)
     if additional_features is not None:
         graphs = [label(graph, methods=additional_features) for graph in graphs]
 
     labels = dataset.labels
-    hashes = _estimate_hashes_at_k_iterations(graphs.copy(), iterations)
+    node_labels = dataset.node_labels
+
+    estimate_node_hashes = "upper_bound_accuracy_node" in metrics
+    hashes = _estimate_hashes_at_k_iterations(
+        graphs.copy(), iterations, estimate_node_hashes
+    )
+    if estimate_node_hashes:
+        hashes, node_hashes = hashes
 
     identifiability = None
     upper_bound_accuracy = None
+    upper_bound_accuracy_node = None
     isomorphism = None
 
     if "identifiability" or "isomorphism" in metrics:
@@ -146,22 +150,60 @@ def evaluate(
     if "identifiability" in metrics:
         identifiability = _evaluate_identifiability(hashes, isomorphism_list)
 
-    if "upper_bound_accuracy" in metrics and labels is not None:
+    if "upper_bound_accuracy" in metrics:
         upper_bound_accuracy = _evaluate_upper_bound_accuracy(hashes, labels)
+
+    if "upper_bound_accuracy_node" in metrics:
+        upper_bound_accuracy_node = _evaluate_upper_bound_accuracy_node(
+            node_hashes, node_labels
+        )
 
     if "isomorphism" in metrics:
         isomorphism = _evaluate_isomorphism(isomorphism_list)
 
     result = EvaluationResult(
-        dataset, identifiability, upper_bound_accuracy, isomorphism
+        dataset,
+        identifiability,
+        upper_bound_accuracy,
+        upper_bound_accuracy_node,
+        isomorphism,
     )
 
     return result
 
 
+def _clean_graphs(ignore_node_features, ignore_edge_features, graphs):
+    return [
+        ig.Graph(
+            n=graph.vcount(),
+            edges=graph.get_edgelist(),
+            directed=graph.is_directed(),
+            vertex_attrs={attr: graph.vs[attr] for attr in graph.vertex_attributes()}
+            if not ignore_node_features
+            else {},
+            edge_attrs={attr: graph.es[attr] for attr in graph.edge_attributes()}
+            if not ignore_edge_features
+            else {},
+        )
+        for graph in graphs
+    ]
+
+
+def _init_metrics(dataset):
+    metrics = []
+    if len(dataset) > 0:
+        metrics.extend(["identifiability", "isomorphism"])
+    if dataset.labels is not None:
+        metrics.append("upper_bound_accuracy")
+    if dataset.node_labels is not None:
+        metrics.append("upper_bound_accuracy_node")
+    return metrics
+
+
 def _estimate_hashes_at_k_iterations(
     graphs: List[ig.Graph],
     iterations: int = 3,
+    return_node_hashes: bool = False,
 ) -> dict[int, List[str]]:
     """Estimate the 1-WL hashes of a dataset at different iterations.
 
@@ -179,15 +221,24 @@ def _estimate_hashes_at_k_iterations(
     -------
     hashes : dict[int, List[str]]
         The estimated hashes of the graphs.
+    node_hashes : dict[int, List[List[str]]]
+        The estimated node hashes of the graphs. Only returned if
+        `return_node_hashes` is True.
     """
     k = 1
     hashes = {}
+    node_hashes = {} if return_node_hashes else None
     stabilized_graphs = set()
     graph_count = len(graphs)
     last_graph_refinements = graphs
     last_graph_hashes = [None] * graph_count
+    last_node_hashes = [None] * graph_count if return_node_hashes else None
     while len(stabilized_graphs) < graph_count and k <= iterations:
-        new_hashes, new_graph_refinements = last_graph_hashes, last_graph_refinements
+        new_hashes, new_node_hashes, new_graph_refinements = (
+            last_graph_hashes,
+            last_node_hashes,
+            last_graph_refinements,
+        )
         for idx, graph in enumerate(last_graph_refinements):
             if idx in stabilized_graphs:
                 continue
@@ -202,11 +253,16 @@ def _estimate_hashes_at_k_iterations(
                 stabilized_graphs.add(idx)
             new_graph_refinements[idx] = refined_graph
             new_hashes[idx] = graph_hash
+            if return_node_hashes:
+                new_node_hashes[idx] = refined_graph.vs["label"]
         hashes[k] = new_hashes.copy()
+        if return_node_hashes:
+            node_hashes[k] = new_node_hashes.copy()
         last_graph_refinements = new_graph_refinements
         last_graph_hashes = new_hashes
+        last_node_hashes = new_node_hashes
         k += 1
-    return hashes
+    return hashes if not return_node_hashes else (hashes, node_hashes)
 
 
 def _get_isomorphism_list(graphs: List[ig.Graph]) -> List[Optional[int]]:
@@ -331,7 +387,7 @@ def _evaluate_upper_bound_accuracy(
 
     This algorithm estimates the upper bound accuracy of a dataset by first
     computing the majority vote of the labels of the graphs that have the same
-    1-WL representation at different iterations. For these majority labelse,
+    1-WL representation at different iterations. For these majority labels,
     the accuracy is then computed.
 
     Parameters
@@ -362,6 +418,52 @@ def _evaluate_upper_bound_accuracy(
             [y_true == y_pred for y_true, y_pred in zip(labels, predicted_labels)]
         ) / len(labels)
     return upper_bound_accuracy
+
+
+def _evaluate_upper_bound_accuracy_node(
+    node_hashes: dict[int, List[List[str]]],
+    node_labels: List[List[int]],
+) -> dict:
+    """Evaluate the upper bound accuracy of a dataset for node classification.
+
+    This algorithm estimates the upper bound accuracy of a dataset by first
+    computing the majority vote of the labels of the nodes that have the same
+    1-WL representation at different iterations. For these majority labels,
+    the accuracy is then computed.
+
+    Parameters
+    ----------
+    node_hashes : dict[int, List[List[str]]]
+        The estimated hashes of the nodes at different iterations.
+    node_labels : List[List[int]]
+        The labels of the nodes in the dataset.
+
+    Returns
+    -------
+    upper_bound_accuracy_node : dict[int, float]
+        The upper bound accuracy of the dataset.
+    """
+    node_labels_flat = [lbl for lbls in node_labels for lbl in lbls]
+    upper_bound_accuracy_node = {}
+    for k, hashes_at_k in node_hashes.items():
+        hashes_at_k_flat = [hsh for hshs in hashes_at_k for hsh in hshs]
+        majority_labels = {}
+        for hash, lbl in zip(hashes_at_k_flat, node_labels_flat):
+            if hash not in majority_labels:
+                majority_labels[hash] = []
+            majority_labels[hash].append(lbl)
+        majority_labels = {
+            hash: max(set(labels), key=labels.count)
+            for hash, labels in majority_labels.items()
+        }
+        predicted_labels = [majority_labels[hash] for hash in hashes_at_k_flat]
+        upper_bound_accuracy_node[k] = sum(
+            [
+                y_true == y_pred
+                for y_true, y_pred in zip(node_labels_flat, predicted_labels)
+            ]
+        ) / len(node_labels_flat)
+    return upper_bound_accuracy_node
 
 
 def _evaluate_isomorphism(

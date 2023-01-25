@@ -16,7 +16,11 @@ class Dataset:
     """
 
     def __init__(
-        self, graphs: List[ig.Graph], labels: List[int] = None, name: str = None
+        self,
+        graphs: List[ig.Graph],
+        labels: List[int] = None,
+        node_labels: List[List[int]] = None,
+        name: str = None,
     ):
         """Initialize a Dataset object.
 
@@ -27,15 +31,21 @@ class Dataset:
         labels : List[int], optional
             The labels of the graphs. If None (default), the graphs are
             assumed to be unlabeled.
+        node_labels : List[List[int]], optional
+            The labels of the nodes. If None (default), the nodes
+            are assumed to be unlabeled. Used for node classification tasks.
         name : str, optional
             The name of the dataset.
         """
         self.graphs = graphs
         self.labels = labels
+        self.node_labels = node_labels
         self.name = name if name is not None else "Unnamed Dataset"
 
     @classmethod
-    def from_dgl(cls, dgl_dataset, labels: List[int] = None) -> "Dataset":
+    def from_dgl(
+        cls, dgl_dataset, labels: List[int] = None, node_labels: List[List[int]] = None
+    ) -> "Dataset":
         """Create a Dataset from a DGL dataset.
 
         Parameters
@@ -46,6 +56,10 @@ class Dataset:
             The labels of the graphs. If None (default), the labels in the
             dataset are used, if available. If the dataset is already labeled,
             the labels override the labels in the dataset.
+        node_labels : List[List[int]], optional
+            The labels of the nodes. If None (default), the node labels
+            in the dataset are used, if available. If the dataset is already
+            labeled, the node labels override the node labels in the dataset.
 
         Returns
         -------
@@ -54,21 +68,35 @@ class Dataset:
         """
         import dgl.backend as F
 
-        node_attr = list(dgl_dataset[0][0].ndata.keys())
-        edge_attr = list(dgl_dataset[0][0].edata.keys())
-        graphs, _labels = zip(
+        with_graph_labels = isinstance(dgl_dataset[0], tuple)
+        first_graph = dgl_dataset[0][0] if with_graph_labels else dgl_dataset[0]
+        with_node_labels = "label" in first_graph.ndata
+        node_attr = list(first_graph.ndata.keys())
+        edge_attr = list(first_graph.edata.keys())
+
+        iterable = (
+            dgl_dataset
+            if with_graph_labels
+            else zip(dgl_dataset, [None] * len(dgl_dataset))
+        )
+        graphs, _labels, _node_labels = zip(
             *[
                 (
                     ig.Graph.from_networkx(graph.to_networkx(node_attr, edge_attr)),
                     int(label),
+                    graph.ndata["label"].tolist() if with_node_labels else None,
                 )
-                for graph, label in dgl_dataset
+                for graph, label in iterable
             ]
         )
-        if labels is None:
+        if labels is None and with_graph_labels:
             labels = _labels
+        if node_labels is None and with_node_labels:
+            node_labels = _node_labels
+
         # Remove superfluous attributes and convert tensors to lists
-        attrs_to_remove = ["_ID", "id", "_nx_name"]
+        # Also remove the node_label attribute if exists
+        attrs_to_remove = ["_ID", "id", "_nx_name", "label"]
         for graph in graphs:
             for attr in attrs_to_remove:
                 if attr in graph.vs.attributes():
@@ -84,7 +112,13 @@ class Dataset:
                 graph.es[attr] = [
                     np.squeeze(F.asnumpy(x)).tolist() for x in graph.es[attr]
                 ]
-        return cls(list(graphs), list(labels), dgl_dataset.name)
+
+        return cls(
+            list(graphs),
+            list(labels) if with_graph_labels else None,
+            list(node_labels) if with_node_labels else None,
+            dgl_dataset.name,
+        )
 
     @classmethod
     def from_pickle(cls, path: str) -> "Dataset":
