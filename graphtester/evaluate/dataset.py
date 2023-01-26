@@ -7,7 +7,7 @@ import pandas as pd
 
 from graphtester.io.dataset import Dataset
 from graphtester.label import label
-from graphtester.test import weisfeiler_lehman_hash
+from graphtester.test import _init_node_labels, weisfeiler_lehman_hash
 
 
 class EvaluationResult:
@@ -233,7 +233,7 @@ def _estimate_hashes_at_k_iterations(
         The estimated node hashes of the graphs. Only returned if
         `return_node_hashes` is True.
     """
-    k = 1
+    k = 0
     hashes = {} if return_graph_hashes else None
     node_hashes = {} if return_node_hashes else None
     stabilized_graphs = set()
@@ -251,7 +251,16 @@ def _estimate_hashes_at_k_iterations(
             if idx in stabilized_graphs:
                 continue
             edge_attrs = graph.es.attributes()
-            node_attrs = graph.vs.attributes() if k == 1 else "label"
+            node_attrs = graph.vs.attributes() if k <= 1 else "label"
+            # zeroth iteration is just the original node labels
+            if k == 0:
+                new_graph_refinements[idx] = graph.copy()
+                node_labels = _init_node_labels(graph, node_attrs, use_degree=False)
+                if return_graph_hashes:
+                    new_hashes[idx] = ";".join(node_labels)
+                if return_node_hashes:
+                    new_node_hashes[idx] = node_labels
+                continue
             # Do a single iteration of 1-WL
             graph_hash, refined_graph = weisfeiler_lehman_hash(
                 graph,
