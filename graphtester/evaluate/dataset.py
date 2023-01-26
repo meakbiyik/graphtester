@@ -133,11 +133,12 @@ def evaluate(
     node_labels = dataset.node_labels
 
     estimate_node_hashes = "upper_bound_accuracy_node" in metrics
-    hashes = _estimate_hashes_at_k_iterations(
-        graphs.copy(), iterations, estimate_node_hashes
+    estimate_graph_hashes = (
+        "identifiability" in estimate_node_hashes or "upper_bound_accuracy" in metrics
     )
-    if estimate_node_hashes:
-        hashes, node_hashes = hashes
+    hashes, node_hashes = _estimate_hashes_at_k_iterations(
+        graphs.copy(), iterations, estimate_graph_hashes, estimate_node_hashes
+    )
 
     identifiability = None
     upper_bound_accuracy = None
@@ -203,6 +204,7 @@ def _init_metrics(dataset):
 def _estimate_hashes_at_k_iterations(
     graphs: List[ig.Graph],
     iterations: int = 3,
+    return_graph_hashes: bool = True,
     return_node_hashes: bool = False,
 ) -> dict[int, List[str]]:
     """Estimate the 1-WL hashes of a dataset at different iterations.
@@ -216,6 +218,12 @@ def _estimate_hashes_at_k_iterations(
         The graphs to estimate the hashes of.
     iterations : int, optional
         The number of iterations to run 1-WL for, by default 3
+    return_graph_hashes : bool, optional
+        Whether to return the estimated graph hashes, by default True.
+        If False, first argument of the returned tuple is None.
+    return_node_hashes : bool, optional
+        Whether to return the estimated node hashes, by default False.
+        If False, second argument of the returned tuple is None.
 
     Returns
     -------
@@ -226,12 +234,12 @@ def _estimate_hashes_at_k_iterations(
         `return_node_hashes` is True.
     """
     k = 1
-    hashes = {}
+    hashes = {} if return_graph_hashes else None
     node_hashes = {} if return_node_hashes else None
     stabilized_graphs = set()
     graph_count = len(graphs)
     last_graph_refinements = graphs
-    last_graph_hashes = [None] * graph_count
+    last_graph_hashes = [None] * graph_count if return_graph_hashes else None
     last_node_hashes = [None] * graph_count if return_node_hashes else None
     while len(stabilized_graphs) < graph_count and k <= iterations:
         new_hashes, new_node_hashes, new_graph_refinements = (
@@ -246,23 +254,31 @@ def _estimate_hashes_at_k_iterations(
             node_attrs = graph.vs.attributes() if k == 1 else "label"
             # Do a single iteration of 1-WL
             graph_hash, refined_graph = weisfeiler_lehman_hash(
-                graph, edge_attrs, node_attrs, iterations=1, return_graph=True
+                graph,
+                edge_attrs,
+                node_attrs,
+                iterations=1,
+                return_graph=True,
+                return_hash=return_graph_hashes,
             )
-            # Check if 1-WL has stabilized
-            if k > 2 and graph_hash == last_graph_hashes[idx]:
+            # Check if 1-WL has stabilized - is not done if the graph hash
+            # is not requested as otherwise we get MemoryError for large graphs
+            if graph_hash and k > 2 and graph_hash == last_graph_hashes[idx]:
                 stabilized_graphs.add(idx)
             new_graph_refinements[idx] = refined_graph
-            new_hashes[idx] = graph_hash
+            if return_graph_hashes:
+                new_hashes[idx] = graph_hash
             if return_node_hashes:
                 new_node_hashes[idx] = refined_graph.vs["label"]
-        hashes[k] = new_hashes.copy()
+        if return_graph_hashes:
+            hashes[k] = new_hashes.copy()
         if return_node_hashes:
             node_hashes[k] = new_node_hashes.copy()
         last_graph_refinements = new_graph_refinements
         last_graph_hashes = new_hashes
         last_node_hashes = new_node_hashes
         k += 1
-    return hashes if not return_node_hashes else (hashes, node_hashes)
+    return (hashes, node_hashes)
 
 
 def _get_isomorphism_list(graphs: List[ig.Graph]) -> List[Optional[int]]:

@@ -141,6 +141,7 @@ def weisfeiler_lehman_hash(
     node_attr: str | List[str] = None,
     iterations: int = None,
     return_graph: bool = False,
+    return_hash: bool = True,
 ):
     """Apply 1-Weisfeiler Lehman (1-WL) test to create a graph hash.
 
@@ -160,6 +161,10 @@ def weisfeiler_lehman_hash(
         Whether to return a copy of the graph with the updated node labels.
         By default False. This is useful to check the node labels, and run
         more iterations on the same graph if needed.
+    return_hash : bool, optional
+        Whether to return the hash of the graph. By default True. If False,
+        the first return value is None. This is useful if the graph is
+        too large to concatenate the node labels into a string.
 
     Returns
     -------
@@ -191,6 +196,10 @@ def weisfeiler_lehman_hash(
         if node_labels == prev_labels:
             break
 
+    hsh = None
+    if return_hash:
+        hsh = ";".join(sorted(node_labels))
+
     if return_graph:
         # Create a new graph with edge labels copied over, and node labels removed
         G = G.copy()
@@ -198,30 +207,9 @@ def weisfeiler_lehman_hash(
         for attr in node_attributes:
             del G.vs[attr]
         G.vs["label"] = node_labels
-        return _sum_strings(sorted(node_labels)), G
+        return hsh, G
     else:
-        return _sum_strings(sorted(node_labels))
-
-
-def _sum_strings(strings: list[str]) -> str:
-    """Sum the strings.
-
-    .join gives memory error for large graphs
-
-    Parameters
-    ----------
-    strings : Iterable[str]
-        The strings to sum.
-
-    Returns
-    -------
-    str
-        The sum of the strings.
-    """
-    out = ""
-    for s in strings:
-        out += s + ";"
-    return out[:-1]
+        return hsh
 
 
 def _init_k_tuple_labels(
