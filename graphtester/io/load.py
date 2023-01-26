@@ -75,8 +75,8 @@ DATASETS = {
 
 def load(
     name_or_graphs: "str | list | dgl.data.DGLDataset",  # type: ignore # noqa: F821
-    labels: list[int] = None,
-    node_labels: list[list[int]] = None,
+    labels: list[float] = None,
+    node_labels: list[list[float]] = None,
     dataset_name: str = None,
 ) -> Dataset:
     """Load graphs from a dataset or a list of graphs.
@@ -85,11 +85,11 @@ def load(
     ----------
     name_or_graphs : str or List[Union[nx.Graph, ig.Graph, dgl.data.DGLDataset]]
         The name of the dataset to load, or a list of graphs.
-    labels : List[int], optional
+    labels : List[float], optional
         The labels of the graphs for classification tasks. If None (default),
         the graphs are assumed to be unlabeled. Needs to be the same length as
         the number of graphs.
-    node_labels : List[List[int]], optional
+    node_labels : List[List[float]], optional
         The node labels of the graphs for node classification tasks. If None
         (default), the graphs are assumed to be unlabeled. Needs to be the same
         length as the number of graphs.

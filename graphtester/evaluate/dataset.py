@@ -152,11 +152,13 @@ def evaluate(
         identifiability = _evaluate_identifiability(hashes, isomorphism_list)
 
     if "upper_bound_accuracy" in metrics:
-        upper_bound_accuracy = _evaluate_upper_bound_accuracy(hashes, labels)
+        int_labels = [int(label) for label in labels]
+        upper_bound_accuracy = _evaluate_upper_bound_accuracy(hashes, int_labels)
 
     if "upper_bound_accuracy_node" in metrics:
+        int_node_labels = [int(label) for label in node_labels]
         upper_bound_accuracy_node = _evaluate_upper_bound_accuracy_node(
-            node_hashes, node_labels
+            node_hashes, int_node_labels
         )
 
     if "isomorphism" in metrics:
