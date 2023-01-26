@@ -1,4 +1,6 @@
 *.html
+*.txt
+*.gz
 
 # Package-related
 *.pickle
