@@ -74,19 +74,23 @@ class Dataset:
         node_attr = list(first_graph.ndata.keys())
         edge_attr = list(first_graph.edata.keys())
 
-        iterable = (
-            dgl_dataset
+        graph_count = len(dgl_dataset)
+        gget = (
+            (lambda i: dgl_dataset[i][0])
             if with_graph_labels
-            else zip(dgl_dataset, [None] * len(dgl_dataset))
+            else dgl_dataset.__getitem__
+        )
+        lget = (
+            (lambda i: int(dgl_dataset[i][1])) if with_graph_labels else lambda _: None
         )
         graphs, _labels, _node_labels = zip(
             *[
                 (
-                    ig.Graph.from_networkx(graph.to_networkx(node_attr, edge_attr)),
-                    int(label),
-                    graph.ndata["label"].tolist() if with_node_labels else None,
+                    ig.Graph.from_networkx(gget(i).to_networkx(node_attr, edge_attr)),
+                    lget(i),
+                    gget(i).ndata["label"].tolist() if with_node_labels else None,
                 )
-                for graph, label in iterable
+                for i in range(graph_count)
             ]
         )
         if labels is None and with_graph_labels:

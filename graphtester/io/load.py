@@ -15,10 +15,10 @@ import networkx as nx
 from graphtester.io.dataset import Dataset
 
 DATASETS = {
-    # TU datasets
     # Homebrewed datasets
     "GT": Path(__file__).parent / "datasets" / "GT.pkl",
     "GT-small": Path(__file__).parent / "datasets" / "GT-small.pkl",
+    # TU datasets
     # Small molecules - TU
     "AIDS": lambda dgl: dgl.data.TUDataset("AIDS"),
     "BZR": lambda dgl: dgl.data.TUDataset("BZR"),
@@ -67,6 +67,9 @@ DATASETS = {
     "ogbg-moltoxcast": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-moltoxcast"),
     # node classification
     "ogbn-proteins": lambda ogbn: ogbn.DglNodePropPredDataset("ogbn-proteins"),
+    # DGL node classification datasets
+    "Cora": lambda dgl: dgl.data.CoraGraphDataset(),
+    "Citeseer": lambda dgl: dgl.data.CiteseerGraphDataset(),
 }
 
 
