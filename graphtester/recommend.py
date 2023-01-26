@@ -1,7 +1,12 @@
 """Recommend additional features to add to a dataset."""
 import pandas as pd
 
-from graphtester.evaluate.dataset import EvaluationResult, evaluate
+from graphtester.evaluate.dataset import (
+    DEFAULT_METRICS,
+    EvaluationResult,
+    _Metric,
+    evaluate,
+)
 from graphtester.io.dataset import Dataset
 from graphtester.label import EDGE_LABELING_METHODS, VERTEX_LABELING_METHODS
 
@@ -13,6 +18,7 @@ class RecommendationResult:
         self,
         dataset: Dataset,
         results: dict[tuple[str, tuple[str]], EvaluationResult],
+        metrics: list[_Metric],
     ):
         """Initialize a recommendation result.
 
@@ -28,6 +34,7 @@ class RecommendationResult:
         """
         self.dataset = dataset
         self.results = results
+        self.metrics = metrics
         self._dataframe = None
 
     def __repr__(self) -> str:
@@ -56,12 +63,8 @@ class RecommendationResult:
                 if features
                 else "-",
             }
-            if results.identifiability is not None:
-                data["1-WL-Identifiability"] = results.identifiability[1]
-            if results.upper_bound_accuracy is not None:
-                data["Upper bound accuracy"] = results.upper_bound_accuracy[1]
-            if results.isomorphism is not None:
-                data["Isomorphism"] = results.isomorphism
+            for metric in self.metrics:
+                data[metric.description] = results.results[metric.name][1]
             rows_dict[state].append(data)
 
         dataframes = []
@@ -69,12 +72,8 @@ class RecommendationResult:
             df = pd.DataFrame(rows)
             # Drop features that are not in top 5 per feature count and state
             sort_by = [("Feature count", True)]
-            if "1-WL-Identifiability" in df.columns:
-                sort_by.append(("1-WL-Identifiability", False))
-            if "Upper bound accuracy" in df.columns:
-                sort_by.append(("Upper bound accuracy", False))
-            if "Isomorphism" in df.columns:
-                sort_by.append(("Isomorphism", False))
+            for metric in self.metrics:
+                sort_by.append((metric.name, not metric.higher_is_better))
             sort_by.append(("Feature name(s)", False))
             df = df.sort_values(
                 by=[by for by, _ in sort_by], ascending=[asc for _, asc in sort_by]
@@ -132,6 +131,7 @@ def recommend(
     RecommendationResult
         The recommendation result.
     """
+    metrics = [DEFAULT_METRICS[metric] for metric in metrics]
     features_to_test = _determine_features_to_test(node_features, edge_features)
 
     has_node_features = bool(dataset.graphs[0].vertex_attributes())
@@ -165,21 +165,13 @@ def recommend(
                 previous_best_features.append(best_feature)
                 features_to_test.remove(best_feature)
             if (
-                (
-                    "identifiability" not in metrics
-                    or best_result.identifiability[1] == 1
-                )
-                and (
-                    "upper_bound_accuracy" not in metrics
-                    or best_result.upper_bound_accuracy[1] == 1
-                )
-                and ("isomorphism" not in metrics or best_result.isomorphism == 1)
+                all(best_result.results[m.name][1] == m.best_value for m in metrics)
             ) or not _result_is_better(best_result, previous_best_result, metrics):
                 # already at full efficiency or no improvement
                 break
             previous_best_result = best_result
 
-    return RecommendationResult(dataset, results)
+    return RecommendationResult(dataset, results, metrics)
 
 
 def _evaluate_features(
@@ -283,34 +275,15 @@ def _result_is_better(
     bool
         True if the result is better than the best result, False otherwise.
     """
-    return (
-        best_result is None
-        or (
-            "identifiability" in metrics
-            and result.identifiability[1] > best_result.identifiability[1]
-        )
-        or (
-            (
-                "identifiability" not in metrics
-                or result.identifiability[1] == best_result.identifiability[1]
-            )
-            and (
-                "upper_bound_accuracy" in metrics
-                and result.upper_bound_accuracy[1] > best_result.upper_bound_accuracy[1]
-            )
-        )
-        or (
-            (
-                "identifiability" not in metrics
-                or result.identifiability[1] == best_result.identifiability[1]
-            )
-            and (
-                "upper_bound_accuracy" not in metrics
-                or result.upper_bound_accuracy[1] == best_result.upper_bound_accuracy[1]
-            )
-            and (
-                "isomorphism" in metrics
-                and result.isomorphism > best_result.isomorphism
-            )
-        )
-    )
+    if best_result is None:
+        return True
+
+    for metric in metrics:
+        if metric.higher_is_better:
+            if result.results[metric.name][1] < best_result.results[metric.name][1]:
+                return False
+        else:
+            if result.results[metric.name][1] > best_result.results[metric.name][1]:
+                return False
+    else:
+        return True

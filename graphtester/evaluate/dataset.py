@@ -1,13 +1,157 @@
 """Evaluate a Dataset."""
 from collections import Counter
-from typing import Dict, List, Optional
+from typing import Dict, List, Literal, Optional, Tuple
 
 import igraph as ig
 import pandas as pd
 
 from graphtester.io.dataset import Dataset
 from graphtester.label import label
-from graphtester.test import _init_node_labels, weisfeiler_lehman_hash
+from graphtester.test import weisfeiler_lehman_hash
+
+
+class _Metric:
+    """A metric to evaluate a dataset."""
+
+    def __init__(
+        self,
+        name: str,
+        description: str,
+        higher_is_better: bool,
+        type: Literal["graph", "node", "link"],
+        evaluator: callable,
+        best_value: Optional[float] = None,
+    ):
+        """Initialize a Metric object.
+
+        Parameters
+        ----------
+        name : str
+            The name of the metric.
+        """
+        self.name = name
+        self.description = description
+        self.higher_is_better = higher_is_better
+        self.type = type
+        self._evaluator = evaluator
+        self.best_value = best_value
+
+    def evaluate(
+        self,
+        graphs: List[ig.Graph],
+        labels: List[float],
+        node_labels: List[List[float]],
+        hashes: Dict[int, List[str]],
+        node_hashes: Dict[int, List[List[str]]],
+    ):
+        if self.type == "graph":
+            return self._evaluator(graphs, hashes, labels)
+        elif self.type == "node":
+            flat_node_hashes = [hsh for hshs in node_hashes for hsh in hshs]
+            flat_node_labels = [lbl for lbls in node_labels for lbl in lbls]
+            return self._evaluator(graphs, flat_node_hashes, flat_node_labels)
+
+
+def _estimate_identifiability(graphs, hashes, labels):
+    isomorphism_list = _get_isomorphism_list(graphs)
+    identifiability = _evaluate_identifiability(hashes, isomorphism_list)
+    return identifiability
+
+
+def _estimate_upper_bound_accuracy(graphs, hashes, labels):
+    int_labels = [int(label) for label in labels]
+    upper_bound_accuracy = _evaluate_upper_bound_accuracy(hashes, int_labels)
+    return upper_bound_accuracy
+
+
+def _estimate_mse(graphs, hashes, labels):
+    mse = _evaluate_mse(hashes, labels)
+    return mse
+
+
+def _estimate_f1(graphs, hashes, labels):
+    int_labels = [int(label) for label in labels]
+    f1 = _evaluate_f1(hashes, int_labels)
+    return f1
+
+
+DEFAULT_METRICS = {
+    "identifiability": _Metric(
+        "identifiability",
+        "1-WL-Identifiability",
+        True,
+        "graph",
+        _estimate_identifiability,
+        1.0,
+    ),
+    "upper_bound_accuracy": _Metric(
+        "upper_bound_accuracy",
+        "Upper Bound Accuracy (graph)",
+        True,
+        "graph",
+        _estimate_upper_bound_accuracy,
+        1.0,
+    ),
+    "upper_bound_accuracy_node": _Metric(
+        "upper_bound_accuracy_node",
+        "Upper Bound Accuracy (Node)",
+        True,
+        "node",
+        _estimate_upper_bound_accuracy,
+        1.0,
+    ),
+    "upper_bound_accuracy_link": _Metric(
+        "upper_bound_accuracy_link",
+        "Upper Bound Accuracy (Link)",
+        True,
+        "link",
+        _estimate_upper_bound_accuracy,
+        1.0,
+    ),
+    "upper_bound_mse": _Metric(
+        "upper_bound_mse", "Upper Bound MSE", False, "graph", _estimate_mse, 0.0
+    ),
+    "upper_bound_mse_node": _Metric(
+        "upper_bound_mse_node",
+        "Upper Bound MSE (Node)",
+        False,
+        "node",
+        _estimate_mse,
+        0.0,
+    ),
+    "upper_bound_mse_link": _Metric(
+        "upper_bound_mse_link",
+        "Upper Bound MSE (Link)",
+        False,
+        "link",
+        _estimate_mse,
+        0.0,
+    ),
+    "upper_bound_f1_micro": _Metric(
+        "upper_bound_f1_micro",
+        "Upper Bound F1-micro (graph)",
+        True,
+        "graph",
+        _estimate_f1,
+        1.0,
+    ),
+    "upper_bound_f1_micro_node": _Metric(
+        "upper_bound_f1_micro_node",
+        "Upper Bound F1-micro (Node)",
+        True,
+        "node",
+        _estimate_f1,
+        1.0,
+    ),
+    "upper_bound_f1_micro_link": _Metric(
+        "upper_bound_f1_micro_link",
+        "Upper Bound F1-micro (Link)",
+        True,
+        "link",
+        _estimate_f1,
+        1.0,
+    ),
+}
 
 
 class EvaluationResult:
@@ -16,10 +160,8 @@ class EvaluationResult:
     def __init__(
         self,
         dataset: Dataset,
-        identifiability: Dict[int, float] = None,
-        upper_bound_accuracy: Dict[int, float] = None,
-        upper_bound_accuracy_node: Dict[int, float] = None,
-        isomorphism: float = None,
+        metrics: List[_Metric],
+        results: Dict[str, List[float]],
     ):
         """Initialize an EvaluationResult object.
 
@@ -29,10 +171,8 @@ class EvaluationResult:
             The dataset that was evaluated.
         """
         self.dataset = dataset
-        self.identifiability = identifiability
-        self.upper_bound_accuracy = upper_bound_accuracy
-        self.upper_bound_accuracy_node = upper_bound_accuracy_node
-        self.isomorphism = isomorphism
+        self.metrics = metrics
+        self.results = results
         self._dataframe = None
 
     def __repr__(self):
@@ -44,14 +184,8 @@ class EvaluationResult:
         if self._dataframe is not None:
             return self._dataframe
         data = {}
-        if self.identifiability is not None:
-            data["1-WL-identifiability"] = self.identifiability
-        if self.isomorphism is not None:
-            data["Isomorphism"] = self.isomorphism
-        if self.upper_bound_accuracy is not None:
-            data["Upper bound accuracy"] = self.upper_bound_accuracy
-        if self.upper_bound_accuracy_node is not None:
-            data["Upper bound accuracy (node labels)"] = self.upper_bound_accuracy_node
+        for metric in self.metrics:
+            data[metric.description] = self.results[metric.name]
         report = pd.DataFrame(data)
         report.index.rename("Iteration", inplace=True)
         report.name = self.dataset.name
@@ -69,7 +203,7 @@ def evaluate(
     ignore_node_features: bool = False,
     ignore_edge_features: bool = True,
     additional_features: List[str] = None,
-    metrics: List[str] = None,
+    metrics: List[str | _Metric] = None,
     iterations: int = 3,
 ) -> EvaluationResult:
     """Evaluate a dataset.
@@ -82,13 +216,6 @@ def evaluate(
         2. Upper bound accuracy: the upper bound accuracy of 1-WL algorithm at
             k iterations for labeled datasets, considering majority vote. Calculated
             if len(dataset) > 0.
-        3. Upper bound accuracy (node labels): the upper bound accuracy of 1-WL
-            algorithm at k iterations for labeled datasets, considering majority
-            vote of node labels for node classification tasks. Calculated if
-            node_labels of dataset is not None.
-        4. Isomorphism: the percentage of graphs that are isomorphic to some
-            other graph in the dataset. This is a measure of how much the
-            dataset is redundant. Calculated if len(dataset) > 0.
 
     The analysis admits additional structural features, which are computed for each
     graph and added as node and/or edge feature.
@@ -111,7 +238,6 @@ def evaluate(
             - "identifiability": 1-WL-identifiability
             - "upper_bound_accuracy": Upper bound accuracy
             - "upper_bound_accuracy_node": Upper bound accuracy (node labels)
-            - "isomorphism": Isomorphism
     iterations : int, optional
         The number of iterations to run 1-WL for, by default 3
 
@@ -120,8 +246,7 @@ def evaluate(
     result : EvaluationResult
         The evaluation results object.
     """
-    if metrics is None:
-        metrics = _init_metrics(dataset)
+    metrics: list[_Metric] = _init_metrics(dataset, metrics)
 
     graphs = dataset.graphs
     if ignore_node_features or ignore_edge_features:
@@ -132,45 +257,19 @@ def evaluate(
     labels = dataset.labels
     node_labels = dataset.node_labels
 
-    estimate_node_hashes = "upper_bound_accuracy_node" in metrics
-    estimate_graph_hashes = (
-        "identifiability" in metrics or "upper_bound_accuracy" in metrics
-    )
+    estimate_graph_hashes = any(metric.type == "graph" for metric in metrics)
+    estimate_node_hashes = any(metric.type == "node" for metric in metrics)
     hashes, node_hashes = _estimate_hashes_at_k_iterations(
         graphs.copy(), iterations, estimate_graph_hashes, estimate_node_hashes
     )
 
-    identifiability = None
-    upper_bound_accuracy = None
-    upper_bound_accuracy_node = None
-    isomorphism = None
-
-    if "identifiability" or "isomorphism" in metrics:
-        isomorphism_list = _get_isomorphism_list(graphs)
-
-    if "identifiability" in metrics:
-        identifiability = _evaluate_identifiability(hashes, isomorphism_list)
-
-    if "upper_bound_accuracy" in metrics:
-        int_labels = [int(label) for label in labels]
-        upper_bound_accuracy = _evaluate_upper_bound_accuracy(hashes, int_labels)
-
-    if "upper_bound_accuracy_node" in metrics:
-        int_node_labels = [int(label) for label in node_labels]
-        upper_bound_accuracy_node = _evaluate_upper_bound_accuracy_node(
-            node_hashes, int_node_labels
+    results = {}
+    for metric in metrics:
+        results[metric.name] = metric.evaluate(
+            graphs, labels, node_labels, hashes, node_hashes
         )
 
-    if "isomorphism" in metrics:
-        isomorphism = _evaluate_isomorphism(isomorphism_list)
-
-    result = EvaluationResult(
-        dataset,
-        identifiability,
-        upper_bound_accuracy,
-        upper_bound_accuracy_node,
-        isomorphism,
-    )
+    result = EvaluationResult(dataset, metrics, results)
 
     return result
 
@@ -192,14 +291,20 @@ def _clean_graphs(ignore_node_features, ignore_edge_features, graphs):
     ]
 
 
-def _init_metrics(dataset):
-    metrics = []
-    if len(dataset) > 0:
-        metrics.extend(["identifiability", "isomorphism"])
-    if dataset.labels is not None:
-        metrics.append("upper_bound_accuracy")
-    if dataset.node_labels is not None:
-        metrics.append("upper_bound_accuracy_node")
+def _init_metrics(dataset, metrics):
+    # if list of _Metric objects is passed, use it
+    if metrics is not None and isinstance(metrics[0], _Metric):
+        return metrics
+    if metrics is None:
+        metrics = []
+        if len(dataset) > 0:
+            metrics.append(DEFAULT_METRICS["identifiability"])
+        if dataset.labels is not None:
+            metrics.append(DEFAULT_METRICS["upper_bound_accuracy"])
+        if dataset.node_labels is not None:
+            metrics.append(DEFAULT_METRICS["upper_bound_accuracy_node"])
+    else:
+        metrics = [DEFAULT_METRICS[metric] for metric in metrics]
     return metrics
 
 
@@ -208,7 +313,7 @@ def _estimate_hashes_at_k_iterations(
     iterations: int = 3,
     return_graph_hashes: bool = True,
     return_node_hashes: bool = False,
-) -> dict[int, List[str]]:
+) -> Tuple[dict[int, List[str]], dict[int, List[List[str]]]]:
     """Estimate the 1-WL hashes of a dataset at different iterations.
 
     We simply run 1-WL on all graphs for k iterations and count the
@@ -253,22 +358,15 @@ def _estimate_hashes_at_k_iterations(
             if idx in stabilized_graphs:
                 continue
             edge_attrs = graph.es.attributes()
-            node_attrs = graph.vs.attributes() if k <= 1 else "label"
+            node_attrs = graph.vs.attributes() if k == 0 else "label"
             # zeroth iteration is just the original node labels
-            if k == 0:
-                new_graph_refinements[idx] = graph.copy()
-                node_labels = _init_node_labels(graph, node_attrs, use_degree=False)
-                if return_graph_hashes:
-                    new_hashes[idx] = ";".join(node_labels)
-                if return_node_hashes:
-                    new_node_hashes[idx] = node_labels
-                continue
+            iter = 0 if k == 0 else 1
             # Do a single iteration of 1-WL
             graph_hash, refined_graph = weisfeiler_lehman_hash(
                 graph,
                 edge_attrs,
                 node_attrs,
-                iterations=1,
+                iterations=iter,
                 return_graph=True,
                 return_hash=return_graph_hashes,
             )
@@ -420,9 +518,9 @@ def _evaluate_upper_bound_accuracy(
     Parameters
     ----------
     hashes : dict[int, List[str]]
-        The estimated hashes of the graphs at different iterations.
+        The estimated hashes of the graphs/nodes/links at different iterations.
     labels : List[int]
-        The labels of the graphs in the dataset.
+        The labels of the graphs/nodes/links in the dataset.
 
     Returns
     -------
@@ -447,35 +545,73 @@ def _evaluate_upper_bound_accuracy(
     return upper_bound_accuracy
 
 
-def _evaluate_upper_bound_accuracy_node(
-    node_hashes: dict[int, List[List[str]]],
-    node_labels: List[List[int]],
+def _evaluate_mse(
+    hashes: dict[int, List[List[str]]],
+    labels: List[List[float]],
 ) -> dict:
-    """Evaluate the upper bound accuracy of a dataset for node classification.
+    """Evaluate the mean squared error of a dataset for given node labels.
 
-    This algorithm estimates the upper bound accuracy of a dataset by first
-    computing the majority vote of the labels of the nodes that have the same
-    1-WL representation at different iterations. For these majority labels,
-    the accuracy is then computed.
+    This algorithm estimates the mean squared error of a dataset by first
+    computing the average of the labels of the nodes that have the same
+    1-WL representation at different iterations. For these average labels,
+    the mean squared error is then computed.
 
     Parameters
     ----------
-    node_hashes : dict[int, List[List[str]]]
-        The estimated hashes of the nodes at different iterations.
-    node_labels : List[List[int]]
-        The labels of the nodes in the dataset.
+    hashes : dict[int, List[str]]
+        The estimated hashes of the graphs/nodes/links at different iterations.
+    labels : List[int]
+        The labels of the graphs/nodes/links in the dataset.
 
     Returns
     -------
-    upper_bound_accuracy_node : dict[int, float]
-        The upper bound accuracy of the dataset.
+    mse : dict[int, float]
+        The mean squared error of the dataset.
     """
-    node_labels_flat = [lbl for lbls in node_labels for lbl in lbls]
-    upper_bound_accuracy_node = {}
-    for k, hashes_at_k in node_hashes.items():
-        hashes_at_k_flat = [hsh for hshs in hashes_at_k for hsh in hshs]
+    mse = {}
+    for k, hashes_at_k in hashes.items():
+        average_labels = {}
+        for hash, lbl in zip(hashes_at_k, labels):
+            if hash not in average_labels:
+                average_labels[hash] = []
+            average_labels[hash].append(lbl)
+        average_labels = {
+            hash: sum(labels) / len(labels) for hash, labels in average_labels.items()
+        }
+        predicted_labels = [average_labels[hash] for hash in hashes_at_k]
+        mse[k] = sum(
+            [(y_true - y_pred) ** 2 for y_true, y_pred in zip(labels, predicted_labels)]
+        ) / len(labels)
+    return mse
+
+
+def _evaluate_f1(
+    hashes: dict[int, List[List[str]]],
+    labels: List[List[float]],
+) -> dict:
+    """Evaluate the F1 score of a dataset for given node labels.
+
+    This algorithm estimates the F1 score of a dataset by first
+    computing the majority vote of the labels of the nodes that have the same
+    1-WL representation at different iterations. For these majority labels,
+    the F1 score is then computed.
+
+    Parameters
+    ----------
+    hashes : dict[int, List[str]]
+        The estimated hashes of the graphs/nodes/links at different iterations.
+    labels : List[int]
+        The labels of the graphs/nodes/links in the dataset.
+
+    Returns
+    -------
+    f1 : dict[int, float]
+        The F1 score of the dataset.
+    """
+    f1 = {}
+    for k, hashes_at_k in hashes.items():
         majority_labels = {}
-        for hash, lbl in zip(hashes_at_k_flat, node_labels_flat):
+        for hash, lbl in zip(hashes_at_k, labels):
             if hash not in majority_labels:
                 majority_labels[hash] = []
             majority_labels[hash].append(lbl)
@@ -483,44 +619,12 @@ def _evaluate_upper_bound_accuracy_node(
             hash: max(set(labels), key=labels.count)
             for hash, labels in majority_labels.items()
         }
-        predicted_labels = [majority_labels[hash] for hash in hashes_at_k_flat]
-        upper_bound_accuracy_node[k] = sum(
-            [
-                y_true == y_pred
-                for y_true, y_pred in zip(node_labels_flat, predicted_labels)
-            ]
-        ) / len(node_labels_flat)
-    return upper_bound_accuracy_node
-
-
-def _evaluate_isomorphism(
-    isomorphism_list: List[Optional[int]],
-) -> float:
-    """Evaluate the isomorphism of a dataset through the isomorphism list.
-
-    We simply calculate the percentage of graphs that are not isomorphic to
-    any other graph in the dataset.
-
-    As defined in the previous paper: "how large the fraction of unique
-    graphs is, i.e. for how many graphs no other isomorphic graph is
-    present in the dataset"
-
-    Parameters
-    ----------
-    isomorphism_list : List[Optional[int]]
-        The isomorphism list of the dataset.
-
-    Returns
-    -------
-    isomorphism : float
-        The isomorphism of the dataset.
-    """
-    # We can't just count the number of None's in the isomorphism list, we
-    # also need to remove any graphs that are referenced by any number in
-    # the list.
-    isomorphic_graph_mask = [idx is None for idx in isomorphism_list]
-    for idx in isomorphism_list:
-        if idx is not None:
-            isomorphic_graph_mask[idx] = False
-
-    return sum(isomorphic_graph_mask) / len(isomorphism_list)
+        predicted_labels = [majority_labels[hash] for hash in hashes_at_k]
+        precision = sum(
+            [y_true == y_pred for y_true, y_pred in zip(labels, predicted_labels)]
+        ) / len(labels)
+        recall = sum(
+            [y_true == y_pred for y_true, y_pred in zip(labels, predicted_labels)]
+        ) / len(labels)
+        f1[k] = 2 * (precision * recall) / (precision + recall)
+    return f1

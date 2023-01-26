@@ -67,6 +67,10 @@ DATASETS = {
     "ogbg-moltoxcast": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-moltoxcast"),
     # node classification
     "ogbn-proteins": lambda ogbn: ogbn.DglNodePropPredDataset("ogbn-proteins"),
+    # graph regression
+    "ogbg-molesol": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-molesol"),
+    "ogbg-molfreesolv": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-molfreesolv"),
+    "ogbg-mollipo": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-mollipo"),
     # DGL node classification datasets
     "Cora": lambda dgl: dgl.data.CoraGraphDataset(),
     "Citeseer": lambda dgl: dgl.data.CiteseerGraphDataset(),
