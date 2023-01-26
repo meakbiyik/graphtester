@@ -92,6 +92,7 @@ class Dataset:
         node_attr = list(first_graph.ndata.keys())
         edge_attr = list(first_graph.edata.keys())
 
+        edge_label_attr = None
         if with_edge_labels:
             edge_label_attr = (
                 "e_type"

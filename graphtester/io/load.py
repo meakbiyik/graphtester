@@ -74,6 +74,12 @@ DATASETS = {
     # DGL node classification datasets
     "Cora": lambda dgl: dgl.data.CoraGraphDataset(),
     "Citeseer": lambda dgl: dgl.data.CiteseerGraphDataset(),
+    "Pubmed": lambda dgl: dgl.data.PubmedGraphDataset(),
+    "CoauthorCS": lambda dgl: dgl.data.CoauthorCSDataset(),
+    "CoauthorPhysics": lambda dgl: dgl.data.CoauthorPhysicsDataset(),
+    "AmazonCoBuyComputer": lambda dgl: dgl.data.AmazonCoBuyComputerDataset(),
+    # DGL link prediction datasets
+    "FB15k237": lambda dgl: dgl.data.FB15k237Dataset(),
 }
 
 

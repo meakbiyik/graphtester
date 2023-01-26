@@ -1,6 +1,7 @@
 *.html
 *.txt
 *.gz
+scripts/dataset/
 
 # Package-related
 *.pickle
