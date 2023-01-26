@@ -134,7 +134,7 @@ def evaluate(
 
     estimate_node_hashes = "upper_bound_accuracy_node" in metrics
     estimate_graph_hashes = (
-        "identifiability" in estimate_node_hashes or "upper_bound_accuracy" in metrics
+        "identifiability" in metrics or "upper_bound_accuracy" in metrics
     )
     hashes, node_hashes = _estimate_hashes_at_k_iterations(
         graphs.copy(), iterations, estimate_graph_hashes, estimate_node_hashes
