@@ -198,9 +198,27 @@ def weisfeiler_lehman_hash(
         for attr in node_attributes:
             del G.vs[attr]
         G.vs["label"] = node_labels
-        return ";".join(sorted(node_labels)), G
+        return _sum_strings(sorted(node_labels)), G
     else:
-        return ";".join(sorted(node_labels))
+        return _sum_strings(sorted(node_labels))
+
+
+def _sum_strings(strings: list[str]) -> str:
+    """Sum the strings.
+
+    .join gives memory error for large graphs
+
+    Parameters
+    ----------
+    strings : Iterable[str]
+        The strings to sum.
+
+    Returns
+    -------
+    str
+        The sum of the strings.
+    """
+    return sum((s + ";" for s in strings), "")[:-1]
 
 
 def _init_k_tuple_labels(
