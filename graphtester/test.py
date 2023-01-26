@@ -422,8 +422,17 @@ def _init_node_labels(
                 for attributes, deg in zip(zip(*attribute_labels), G.vs.degree())
             ]
         else:
+            # we check the first node's attributes. if an attribute is too big
+            # as a string, we use the hash of the attribute to reduce the size
+            # of the label.
+            hash_funcs = []
+            for attr in attribute_labels[0]:
+                if len(str(attr)) > 100:
+                    hash_funcs.append(lambda a: str(hash(str(a))))
+                else:
+                    hash_funcs.append(str)
             return [
-                ";".join([str(attr) for attr in attributes])
+                ";".join([hsh(attr) for hsh, attr in zip(hash_funcs, attributes)])
                 for attributes in zip(*attribute_labels)
             ]
 
