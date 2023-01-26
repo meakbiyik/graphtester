@@ -18,7 +18,7 @@ class _Metric:
         name: str,
         description: str,
         higher_is_better: bool,
-        type: Literal["graph", "node", "link"],
+        type: Literal["graph", "node", "edge"],
         evaluator: callable,
         best_value: Optional[float] = None,
     ):
@@ -41,8 +41,10 @@ class _Metric:
         graphs: List[ig.Graph],
         labels: List[float],
         node_labels: List[List[float]],
+        edge_labels: List[List[float]],
         hashes: Dict[int, List[str]],
         node_hashes: Dict[int, List[List[str]]],
+        edge_hashes: Dict[int, List[List[str]]],
     ):
         if self.type == "graph":
             return self._evaluator(graphs, hashes, labels)
@@ -50,6 +52,10 @@ class _Metric:
             flat_node_hashes = [hsh for hshs in node_hashes for hsh in hshs]
             flat_node_labels = [lbl for lbls in node_labels for lbl in lbls]
             return self._evaluator(graphs, flat_node_hashes, flat_node_labels)
+        elif self.type == "edge":
+            flat_edge_hashes = [hsh for hshs in edge_hashes for hsh in hshs]
+            flat_edge_labels = [lbl for lbls in edge_labels for lbl in lbls]
+            return self._evaluator(graphs, flat_edge_hashes, flat_edge_labels)
 
 
 def _estimate_identifiability(graphs, hashes, labels):
@@ -100,11 +106,11 @@ DEFAULT_METRICS = {
         _estimate_upper_bound_accuracy,
         1.0,
     ),
-    "upper_bound_accuracy_link": _Metric(
-        "upper_bound_accuracy_link",
-        "Upper Bound Accuracy (Link)",
+    "upper_bound_accuracy_edge": _Metric(
+        "upper_bound_accuracy_edge",
+        "Upper Bound Accuracy (Edge)",
         True,
-        "link",
+        "edge",
         _estimate_upper_bound_accuracy,
         1.0,
     ),
@@ -119,11 +125,11 @@ DEFAULT_METRICS = {
         _estimate_mse,
         0.0,
     ),
-    "upper_bound_mse_link": _Metric(
-        "upper_bound_mse_link",
-        "Upper Bound MSE (Link)",
+    "upper_bound_mse_edge": _Metric(
+        "upper_bound_mse_edge",
+        "Upper Bound MSE (Edge)",
         False,
-        "link",
+        "edge",
         _estimate_mse,
         0.0,
     ),
@@ -143,11 +149,11 @@ DEFAULT_METRICS = {
         _estimate_f1,
         1.0,
     ),
-    "upper_bound_f1_micro_link": _Metric(
-        "upper_bound_f1_micro_link",
-        "Upper Bound F1-micro (Link)",
+    "upper_bound_f1_micro_edge": _Metric(
+        "upper_bound_f1_micro_edge",
+        "Upper Bound F1-micro (Edge)",
         True,
-        "link",
+        "edge",
         _estimate_f1,
         1.0,
     ),
@@ -256,17 +262,25 @@ def evaluate(
 
     labels = dataset.labels
     node_labels = dataset.node_labels
+    edge_labels = dataset.edge_labels
 
     estimate_graph_hashes = any(metric.type == "graph" for metric in metrics)
-    estimate_node_hashes = any(metric.type == "node" for metric in metrics)
+    estimate_edge_hashes = any(metric.type == "edge" for metric in metrics)
+    estimate_node_hashes = estimate_edge_hashes or any(
+        metric.type == "node" for metric in metrics
+    )
     hashes, node_hashes = _estimate_hashes_at_k_iterations(
         graphs.copy(), iterations, estimate_graph_hashes, estimate_node_hashes
     )
 
+    edge_hashes = None
+    if estimate_edge_hashes:
+        edge_hashes = _estimate_edge_hashes(graphs, node_hashes)
+
     results = {}
     for metric in metrics:
         results[metric.name] = metric.evaluate(
-            graphs, labels, node_labels, hashes, node_hashes
+            graphs, labels, node_labels, edge_labels, hashes, node_hashes, edge_hashes
         )
 
     result = EvaluationResult(dataset, metrics, results)
@@ -303,6 +317,8 @@ def _init_metrics(dataset, metrics):
             metrics.append(DEFAULT_METRICS["upper_bound_accuracy"])
         if dataset.node_labels is not None:
             metrics.append(DEFAULT_METRICS["upper_bound_accuracy_node"])
+        if dataset.edge_labels is not None:
+            metrics.append(DEFAULT_METRICS["upper_bound_accuracy_edge"])
     else:
         metrics = [DEFAULT_METRICS[metric] for metric in metrics]
     return metrics
@@ -504,6 +520,47 @@ def _evaluate_identifiability(
     return identifiability
 
 
+def _estimate_edge_hashes(
+    graphs: List[ig.Graph],
+    node_hashes: dict[int, List[List[str]]],
+) -> dict[int, List[List[str]]]:
+    """Estimate the edge hashes of a dataset.
+
+    For each edge, edge hash is the hashes of the nodes at the ends of the edge.
+    Which is simply sorted concatenation of the node hashes.
+
+    Parameters
+    ----------
+    graphs : List[ig.Graph]
+        The graphs in the dataset.
+    node_hashes : dict[int, List[List[str]]]
+        The estimated hashes of the nodes at different iterations.
+
+    Returns
+    -------
+    edge_hashes : dict[int, List[List[str]]]
+        The estimated hashes of the edges at different iterations.
+    """
+    edge_hashes = {}
+    for k, hashes_at_k in node_hashes.items():
+        edge_hashes[k] = []
+        for graph, node_hashes_at_k in zip(graphs, hashes_at_k):
+            edge_hashes_at_k = []
+            for edge in graph.es:
+                edge_hashes_at_k.append(
+                    ":".join(
+                        sorted(
+                            [
+                                node_hashes_at_k[edge.source],
+                                node_hashes_at_k[edge.target],
+                            ]
+                        )
+                    )
+                )
+            edge_hashes[k].append(edge_hashes_at_k)
+    return edge_hashes
+
+
 def _evaluate_upper_bound_accuracy(
     hashes: dict[int, List[str]],
     labels: List[int],
@@ -518,9 +575,9 @@ def _evaluate_upper_bound_accuracy(
     Parameters
     ----------
     hashes : dict[int, List[str]]
-        The estimated hashes of the graphs/nodes/links at different iterations.
+        The estimated hashes of the graphs/nodes/edges at different iterations.
     labels : List[int]
-        The labels of the graphs/nodes/links in the dataset.
+        The labels of the graphs/nodes/edges in the dataset.
 
     Returns
     -------
@@ -559,9 +616,9 @@ def _evaluate_mse(
     Parameters
     ----------
     hashes : dict[int, List[str]]
-        The estimated hashes of the graphs/nodes/links at different iterations.
+        The estimated hashes of the graphs/nodes/edges at different iterations.
     labels : List[int]
-        The labels of the graphs/nodes/links in the dataset.
+        The labels of the graphs/nodes/edges in the dataset.
 
     Returns
     -------
@@ -599,9 +656,9 @@ def _evaluate_f1(
     Parameters
     ----------
     hashes : dict[int, List[str]]
-        The estimated hashes of the graphs/nodes/links at different iterations.
+        The estimated hashes of the graphs/nodes/edges at different iterations.
     labels : List[int]
-        The labels of the graphs/nodes/links in the dataset.
+        The labels of the graphs/nodes/edges in the dataset.
 
     Returns
     -------
