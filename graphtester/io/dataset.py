@@ -83,13 +83,22 @@ class Dataset:
             if with_graph_labels
             else dgl_dataset.__getitem__
         )
-        lget = (lambda i: dgl_dataset[i][1]) if with_graph_labels else lambda _: None
+        lget = (
+            (lambda i: float(dgl_dataset[i][1]))
+            if with_graph_labels
+            else lambda _: None
+        )
+        nlget = (
+            (lambda i: [float(lbl) for lbl in gget(i).ndata["label"].tolist()])
+            if with_node_labels
+            else lambda _: None
+        )
         graphs, _labels, _node_labels = zip(
             *[
                 (
                     ig.Graph.from_networkx(gget(i).to_networkx(node_attr, edge_attr)),
                     lget(i),
-                    gget(i).ndata["label"].tolist() if with_node_labels else None,
+                    nlget(i),
                 )
                 for i in range(graph_count)
             ]
