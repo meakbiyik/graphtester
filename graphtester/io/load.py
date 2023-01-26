@@ -81,6 +81,7 @@ def load(
     name_or_graphs: "str | list | dgl.data.DGLDataset",  # type: ignore # noqa: F821
     labels: list[float] = None,
     node_labels: list[list[float]] = None,
+    edge_labels: list[list[float]] = None,
     dataset_name: str = None,
 ) -> Dataset:
     """Load graphs from a dataset or a list of graphs.
@@ -96,7 +97,11 @@ def load(
     node_labels : List[List[float]], optional
         The node labels of the graphs for node classification tasks. If None
         (default), the graphs are assumed to be unlabeled. Needs to be the same
-        length as the number of graphs.
+        length as the number of nodes per graph.
+    edge_labels : List[List[float]], optional
+        The edge labels of the graphs for edge classification tasks. If None
+        (default), the graphs are assumed to be unlabeled. Needs to be the same
+        length as the number of edges per graph.
     dataset_name : str, optional
         The name of the dataset. If None (default), the name of the dataset is
         used.
@@ -106,11 +111,11 @@ def load(
     dataset : Dataset
     """
     if isinstance(name_or_graphs, str):
-        dataset = _load_dataset(name_or_graphs, labels, node_labels)
+        dataset = _load_dataset(name_or_graphs, labels, node_labels, edge_labels)
     elif isinstance(name_or_graphs, list):
-        dataset = _load_graphs(name_or_graphs, labels, node_labels)
+        dataset = _load_graphs(name_or_graphs, labels, node_labels, edge_labels)
     else:
-        dataset = Dataset.from_dgl(name_or_graphs, labels, node_labels)
+        dataset = Dataset.from_dgl(name_or_graphs, labels, node_labels, edge_labels)
 
     if dataset_name is not None:
         dataset.name = dataset_name
@@ -118,7 +123,9 @@ def load(
     return dataset
 
 
-def _load_dataset(name: str, labels: List = None, node_labels: List = None) -> Dataset:
+def _load_dataset(
+    name: str, labels: List = None, node_labels: List = None, edge_labels: List = None
+) -> Dataset:
     """Load a dataset.
 
     Parameters
@@ -133,6 +140,10 @@ def _load_dataset(name: str, labels: List = None, node_labels: List = None) -> D
         The node labels of the graphs for node classification tasks. If None
         (default), the node labels in the dataset are used, if available. If the
         dataset is already labeled, the node labels override the node labels.
+    edge_labels : List[List[any]], optional
+        The edge labels of the graphs for link classification tasks. If None
+        (default), the edge labels in the dataset are used, if available. If the
+        dataset is already labeled, the edge labels override the edge labels.
 
     Returns
     -------
@@ -147,17 +158,17 @@ def _load_dataset(name: str, labels: List = None, node_labels: List = None) -> D
     if name.startswith("ogbg"):
         ogb = _import_ogbg()
         ogb_dataset = DATASETS[name](ogb)
-        return Dataset.from_dgl(ogb_dataset, labels, node_labels)
+        return Dataset.from_dgl(ogb_dataset, labels, node_labels, edge_labels)
 
     if name.startswith("ogbn"):
         ogb = _import_ogbn()
         ogb_dataset = DATASETS[name](ogb)
-        return Dataset.from_dgl(ogb_dataset, labels, node_labels)
+        return Dataset.from_dgl(ogb_dataset, labels, node_labels, edge_labels)
 
     # Otherwise a DGL dataset
     dgl = _import_dgl()
     dgl_dataset = DATASETS[name](dgl)
-    return Dataset.from_dgl(dgl_dataset, labels, node_labels)
+    return Dataset.from_dgl(dgl_dataset, labels, node_labels, edge_labels)
 
 
 def _import_dgl():
@@ -195,7 +206,10 @@ def _import_ogbn():
 
 
 def _load_graphs(
-    graphs: List[nx.Graph | ig.Graph], labels: List = None, node_labels: List = None
+    graphs: List[nx.Graph | ig.Graph],
+    labels: List = None,
+    node_labels: List = None,
+    edge_labels: List = None,
 ) -> Dataset:
     """Load graphs.
 
@@ -206,6 +220,12 @@ def _load_graphs(
     labels : List[any], optional
         The labels of the graphs for classification tasks. If None (default),
         the graphs are assumed to be unlabeled.
+    node_labels : List[List[any]], optional
+        The node labels of the graphs for node classification tasks. If None
+        (default), the graphs are assumed to be unlabeled.
+    edge_labels : List[List[any]], optional
+        The edge labels of the graphs for link classification tasks. If None
+        (default), the graphs are assumed to be unlabeled.
 
     Returns
     -------
@@ -220,4 +240,4 @@ def _load_graphs(
     if isinstance(graphs[0], nx.Graph):
         graphs = [ig.Graph.from_networkx(g) for g in graphs]
 
-    return Dataset(graphs, labels, node_labels)
+    return Dataset(graphs, labels, node_labels, edge_labels)

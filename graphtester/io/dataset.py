@@ -20,6 +20,7 @@ class Dataset:
         graphs: List[ig.Graph],
         labels: List[float] = None,
         node_labels: List[List[float]] = None,
+        edge_labels: List[List[float]] = None,
         name: str = None,
     ):
         """Initialize a Dataset object.
@@ -34,12 +35,16 @@ class Dataset:
         node_labels : List[List[float]], optional
             The labels of the nodes. If None (default), the nodes
             are assumed to be unlabeled. Used for node classification tasks.
+        edge_labels : List[List[float]], optional
+            The labels of the edges. If None (default), the edges
+            are assumed to be unlabeled. Used for edge classification tasks.
         name : str, optional
             The name of the dataset.
         """
         self.graphs = graphs
         self.labels = labels
         self.node_labels = node_labels
+        self.edge_labels = edge_labels
         self.name = name if name is not None else "Unnamed Dataset"
 
     @classmethod
@@ -48,6 +53,7 @@ class Dataset:
         dgl_dataset,
         labels: List[float] = None,
         node_labels: List[List[float]] = None,
+        edge_labels: List[List[float]] = None,
     ) -> "Dataset":
         """Create a Dataset from a DGL dataset.
 
@@ -63,6 +69,10 @@ class Dataset:
             The labels of the nodes. If None (default), the node labels
             in the dataset are used, if available. If the dataset is already
             labeled, the node labels override the node labels in the dataset.
+        edge_labels : List[List[float]], optional
+            The labels of the edges. If None (default), the edge labels
+            in the dataset are used, if available. If the dataset is already
+            labeled, the edge labels override the edge labels in the dataset.
 
         Returns
         -------
@@ -74,8 +84,22 @@ class Dataset:
         with_graph_labels = isinstance(dgl_dataset[0], tuple)
         first_graph = dgl_dataset[0][0] if with_graph_labels else dgl_dataset[0]
         with_node_labels = "label" in first_graph.ndata
+        with_edge_labels = (
+            ("e_type" in first_graph.edata)
+            or ("rel_type" in first_graph.edata)
+            or ("etype" in first_graph.edata)
+        )
         node_attr = list(first_graph.ndata.keys())
         edge_attr = list(first_graph.edata.keys())
+
+        if with_edge_labels:
+            edge_label_attr = (
+                "e_type"
+                if "e_type" in first_graph.edata
+                else "rel_type"
+                if "rel_type" in first_graph.edata
+                else "etype"
+            )
 
         graph_count = len(dgl_dataset)
         gget = (
@@ -93,24 +117,32 @@ class Dataset:
             if with_node_labels
             else lambda _: None
         )
-        graphs, _labels, _node_labels = zip(
+        elget = (
+            (lambda i: [float(lbl) for lbl in gget(i).edata[edge_label_attr].tolist()])
+            if with_edge_labels
+            else lambda _: None
+        )
+        graphs, _labels, _node_labels, _edge_labels = zip(
             *[
                 (
                     ig.Graph.from_networkx(gget(i).to_networkx(node_attr, edge_attr)),
                     lget(i),
                     nlget(i),
+                    elget(i),
                 )
                 for i in range(graph_count)
             ]
         )
         if labels is None and with_graph_labels:
-            labels = _labels
+            labels = list(_labels)
         if node_labels is None and with_node_labels:
-            node_labels = _node_labels
+            node_labels = list(_node_labels)
+        if edge_labels is None and with_edge_labels:
+            edge_labels = list(_edge_labels)
 
         # Remove superfluous attributes and convert tensors to lists
         # Also remove the node_label attribute if exists
-        attrs_to_remove = ["_ID", "id", "_nx_name", "label"]
+        attrs_to_remove = ["_ID", "id", "_nx_name", "label", edge_label_attr]
         for graph in graphs:
             for attr in attrs_to_remove:
                 if attr in graph.vs.attributes():
@@ -129,8 +161,9 @@ class Dataset:
 
         return cls(
             list(graphs),
-            list(labels) if with_graph_labels else None,
-            list(node_labels) if with_node_labels else None,
+            labels,
+            node_labels,
+            edge_labels,
             dgl_dataset.name,
         )
 
