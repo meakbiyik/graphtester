@@ -18,8 +18,8 @@ class Dataset:
     def __init__(
         self,
         graphs: List[ig.Graph],
-        labels: List[int] = None,
-        node_labels: List[List[int]] = None,
+        labels: List[float] = None,
+        node_labels: List[List[float]] = None,
         name: str = None,
     ):
         """Initialize a Dataset object.
@@ -28,10 +28,10 @@ class Dataset:
         ----------
         graphs : List[ig.Graph]
             The graphs.
-        labels : List[int], optional
+        labels : List[float], optional
             The labels of the graphs. If None (default), the graphs are
             assumed to be unlabeled.
-        node_labels : List[List[int]], optional
+        node_labels : List[List[float]], optional
             The labels of the nodes. If None (default), the nodes
             are assumed to be unlabeled. Used for node classification tasks.
         name : str, optional
@@ -44,7 +44,10 @@ class Dataset:
 
     @classmethod
     def from_dgl(
-        cls, dgl_dataset, labels: List[int] = None, node_labels: List[List[int]] = None
+        cls,
+        dgl_dataset,
+        labels: List[float] = None,
+        node_labels: List[List[float]] = None,
     ) -> "Dataset":
         """Create a Dataset from a DGL dataset.
 
@@ -52,11 +55,11 @@ class Dataset:
         ----------
         dgl_dataset : DGLDataset
             The DGL dataset.
-        labels : List[int], optional
+        labels : List[float], optional
             The labels of the graphs. If None (default), the labels in the
             dataset are used, if available. If the dataset is already labeled,
             the labels override the labels in the dataset.
-        node_labels : List[List[int]], optional
+        node_labels : List[List[float]], optional
             The labels of the nodes. If None (default), the node labels
             in the dataset are used, if available. If the dataset is already
             labeled, the node labels override the node labels in the dataset.
@@ -80,9 +83,7 @@ class Dataset:
             if with_graph_labels
             else dgl_dataset.__getitem__
         )
-        lget = (
-            (lambda i: int(dgl_dataset[i][1])) if with_graph_labels else lambda _: None
-        )
+        lget = (lambda i: dgl_dataset[i][1]) if with_graph_labels else lambda _: None
         graphs, _labels, _node_labels = zip(
             *[
                 (
@@ -190,14 +191,14 @@ class Dataset:
         """
         return self.graphs[index], self.labels[index]
 
-    def __iter__(self) -> Tuple[ig.Graph, int]:
+    def __iter__(self) -> Tuple[ig.Graph, float]:
         """Iterate over the graphs and their labels.
 
         Yields
         ------
         graph : ig.Graph
             The graph.
-        label : int
+        label : float
             The label of the graph.
         """
         for graph, label in zip(self.graphs, self.labels):
