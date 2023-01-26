@@ -218,7 +218,10 @@ def _sum_strings(strings: list[str]) -> str:
     str
         The sum of the strings.
     """
-    return sum((s + ";" for s in strings), "")[:-1]
+    out = ""
+    for s in strings:
+        out += s + ";"
+    return out[:-1]
 
 
 def _init_k_tuple_labels(
