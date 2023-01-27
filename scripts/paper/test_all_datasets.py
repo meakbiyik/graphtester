@@ -12,7 +12,7 @@ MULTIPROCESSING = True
 
 datasets_to_evaluate = [
     dataset for dataset in DATASETS if not dataset.startswith("GT")
-][-6:-5]
+]
 
 
 def select_metric(dataset: Dataset) -> _Metric:
