@@ -173,7 +173,7 @@ class EvaluationResult:
         self,
         dataset: Dataset,
         metrics: List[_Metric],
-        results: Dict[str, List[float]],
+        results: Dict[str, Dict[int, float]],
     ):
         """Initialize an EvaluationResult object.
 
@@ -201,7 +201,7 @@ class EvaluationResult:
         report = pd.DataFrame(data)
         report.index.rename("Iteration", inplace=True)
         report.name = self.dataset.name
-        report = report.round(4) * 100
+        report = report.round(4)
         self._dataframe = report
         return report
 
@@ -270,13 +270,12 @@ def evaluate(
     node_labels = dataset.node_labels
     edge_labels = dataset.edge_labels
 
-    estimate_graph_hashes = any(metric.type == "graph" for metric in metrics)
     estimate_edge_hashes = any(metric.type == "edge" for metric in metrics)
     estimate_node_hashes = estimate_edge_hashes or any(
         metric.type == "node" for metric in metrics
     )
     hashes, node_hashes = _estimate_hashes_at_k_iterations(
-        graphs.copy(), iterations, estimate_graph_hashes, estimate_node_hashes
+        graphs.copy(), iterations, estimate_node_hashes
     )
 
     edge_hashes = None
@@ -333,7 +332,6 @@ def _init_metrics(dataset, metrics):
 def _estimate_hashes_at_k_iterations(
     graphs: List[ig.Graph],
     iterations: int = 3,
-    return_graph_hashes: bool = True,
     return_node_hashes: bool = False,
 ) -> Tuple[dict[int, List[str]], dict[int, List[List[str]]]]:
     """Estimate the 1-WL hashes of a dataset at different iterations.
@@ -347,9 +345,6 @@ def _estimate_hashes_at_k_iterations(
         The graphs to estimate the hashes of.
     iterations : int, optional
         The number of iterations to run 1-WL for, by default 3
-    return_graph_hashes : bool, optional
-        Whether to return the estimated graph hashes, by default True.
-        If False, first argument of the returned tuple is None.
     return_node_hashes : bool, optional
         Whether to return the estimated node hashes, by default False.
         If False, second argument of the returned tuple is None.
@@ -363,14 +358,14 @@ def _estimate_hashes_at_k_iterations(
         `return_node_hashes` is True.
     """
     k = 0
-    hashes = {} if return_graph_hashes else None
+    hashes = {}
     node_hashes = {} if return_node_hashes else None
     stabilized_graphs = set()
     graph_count = len(graphs)
     last_graph_refinements = graphs
-    last_graph_hashes = [None] * graph_count if return_graph_hashes else None
+    last_graph_hashes = [None] * graph_count
     last_node_hashes = [None] * graph_count if return_node_hashes else None
-    while len(stabilized_graphs) < graph_count and k <= iterations:
+    while k <= iterations:
         new_hashes, new_node_hashes, new_graph_refinements = (
             last_graph_hashes,
             last_node_hashes,
@@ -390,19 +385,15 @@ def _estimate_hashes_at_k_iterations(
                 node_attrs,
                 iterations=iter,
                 return_graph=True,
-                return_hash=return_graph_hashes,
             )
-            # Check if 1-WL has stabilized - is not done if the graph hash
-            # is not requested as otherwise we get MemoryError for large graphs
-            if graph_hash and k > 2 and graph_hash == last_graph_hashes[idx]:
+            # Check if 1-WL has stabilized
+            if k > 2 and graph_hash == last_graph_hashes[idx]:
                 stabilized_graphs.add(idx)
             new_graph_refinements[idx] = refined_graph
-            if return_graph_hashes:
-                new_hashes[idx] = graph_hash
+            new_hashes[idx] = graph_hash
             if return_node_hashes:
                 new_node_hashes[idx] = refined_graph.vs["label"]
-        if return_graph_hashes:
-            hashes[k] = new_hashes.copy()
+        hashes[k] = new_hashes.copy()
         if return_node_hashes:
             node_hashes[k] = new_node_hashes.copy()
         last_graph_refinements = new_graph_refinements
@@ -609,8 +600,8 @@ def _evaluate_upper_bound_accuracy(
 
 
 def _evaluate_mse(
-    hashes: dict[int, List[List[str]]],
-    labels: List[List[float]],
+    hashes: dict[int, List[str]],
+    labels: List[float],
 ) -> dict:
     """Evaluate the mean squared error of a dataset for given node labels.
 
@@ -623,7 +614,7 @@ def _evaluate_mse(
     ----------
     hashes : dict[int, List[str]]
         The estimated hashes of the graphs/nodes/edges at different iterations.
-    labels : List[int]
+    labels : List[float]
         The labels of the graphs/nodes/edges in the dataset.
 
     Returns

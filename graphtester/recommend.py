@@ -19,6 +19,7 @@ class RecommendationResult:
         dataset: Dataset,
         results: dict[tuple[str, tuple[str]], EvaluationResult],
         metrics: list[_Metric],
+        iterations: int,
     ):
         """Initialize a recommendation result.
 
@@ -31,10 +32,15 @@ class RecommendationResult:
             of this dictionary is a tuple of the state of the dataset (with or
             without node or edge features) and the features that were added to
             achieve the values at the EvaluationResult.
+        metrics : list[_Metric]
+            The metrics that were evaluated.
+        iterations : int
+            The number of iterations that were performed.
         """
         self.dataset = dataset
         self.results = results
         self.metrics = metrics
+        self.iterations = iterations
         self._dataframe = None
 
     def __repr__(self) -> str:
@@ -64,7 +70,7 @@ class RecommendationResult:
                 else "-",
             }
             for metric in self.metrics:
-                data[metric.description] = results.results[metric.name][1]
+                data[metric.description] = results.results[metric.name][self.iterations]
             rows_dict[state].append(data)
 
         dataframes = []
@@ -73,7 +79,7 @@ class RecommendationResult:
             # Drop features that are not in top 5 per feature count and state
             sort_by = [("Feature count", True)]
             for metric in self.metrics:
-                sort_by.append((metric.name, not metric.higher_is_better))
+                sort_by.append((metric.description, not metric.higher_is_better))
             sort_by.append(("Feature name(s)", False))
             df = df.sort_values(
                 by=[by for by, _ in sort_by], ascending=[asc for _, asc in sort_by]
@@ -103,6 +109,8 @@ def recommend(
     max_feature_count=3,
     node_features=True,
     edge_features=True,
+    fast=True,
+    iterations=1,
 ) -> RecommendationResult:
     """Recommend additional features (methods) to add to a dataset.
 
@@ -125,14 +133,21 @@ def recommend(
         Whether to recommend node features, by default True
     edge_features : bool, optional
         Whether to recommend edge features, by default True
+    fast : bool, optional
+        Whether to only use the features that are scalable to large datasets,
+        by default True
+    iterations : int, optional
+        The number of iterations to run the comparison for, by default 1
 
     Returns
     -------
     RecommendationResult
         The recommendation result.
     """
-    metrics = [DEFAULT_METRICS[metric] for metric in metrics]
-    features_to_test = _determine_features_to_test(node_features, edge_features)
+    if not isinstance(metrics[0], _Metric):
+        metrics = [DEFAULT_METRICS[metric] for metric in metrics]
+
+    features_to_test = _determine_features_to_test(node_features, edge_features, fast)
 
     has_node_features = bool(dataset.graphs[0].vertex_attributes())
     has_edge_features = bool(dataset.graphs[0].edge_attributes())
@@ -160,18 +175,24 @@ def recommend(
                 state,
                 previous_best_features,
                 feature_count,
+                iterations,
             )
             if best_feature is not None:
                 previous_best_features.append(best_feature)
                 features_to_test.remove(best_feature)
             if (
-                all(best_result.results[m.name][1] == m.best_value for m in metrics)
-            ) or not _result_is_better(best_result, previous_best_result, metrics):
+                all(
+                    best_result.results[m.name][iterations] == m.best_value
+                    for m in metrics
+                )
+            ) or not _result_is_better(
+                best_result, previous_best_result, metrics, iterations
+            ):
                 # already at full efficiency or no improvement
                 break
             previous_best_result = best_result
 
-    return RecommendationResult(dataset, results, metrics)
+    return RecommendationResult(dataset, results, metrics, iterations)
 
 
 def _evaluate_features(
@@ -182,6 +203,7 @@ def _evaluate_features(
     state,
     previous_best_features,
     feature_count,
+    iterations,
 ):
     best_feature, best_result = None, None
     if feature_count == 0:
@@ -189,7 +211,7 @@ def _evaluate_features(
             dataset.copy(),
             metrics=metrics,
             additional_features=None,
-            iterations=1,
+            iterations=iterations,
             ignore_node_features=state == "Without node or edge features"
             or state == "With edge features",
             ignore_edge_features=state == "Without node or edge features"
@@ -205,19 +227,21 @@ def _evaluate_features(
                 test_dataset,
                 metrics=metrics,
                 additional_features=features,
-                iterations=1,
+                iterations=iterations,
                 ignore_node_features=state == "Without node or edge features"
                 or state == "With edge features",
                 ignore_edge_features=state == "Without node or edge features"
                 or state == "With node features",
             )
             results[(state, features)] = result
-            if _result_is_better(result, best_result, metrics):
+            if _result_is_better(result, best_result, metrics, iterations):
                 best_feature, best_result = feature, result
     return best_feature, best_result
 
 
-def _determine_features_to_test(node_features: bool, edge_features: bool) -> list[str]:
+def _determine_features_to_test(
+    node_features: bool, edge_features: bool, fast: bool
+) -> list[str]:
     """Determine the methods to test for recommendation.
 
     Parameters
@@ -226,6 +250,8 @@ def _determine_features_to_test(node_features: bool, edge_features: bool) -> lis
         Whether to recommend node features.
     edge_features : bool
         Whether to recommend edge features.
+    fast : bool
+        Whether to only use the features that are scalable to large datasets.
 
     Returns
     -------
@@ -253,11 +279,19 @@ def _determine_features_to_test(node_features: bool, edge_features: bool) -> lis
             if not method.endswith("as node label")
         ]
 
+    if fast:
+        features_to_test = [
+            method for method in features_to_test if "count of" not in method
+        ]
+
     return features_to_test
 
 
 def _result_is_better(
-    result: EvaluationResult, best_result: EvaluationResult, metrics: list[str]
+    result: EvaluationResult,
+    best_result: EvaluationResult,
+    metrics: list[str],
+    iterations: int,
 ) -> bool:
     """Check whether a result is better than another.
 
@@ -269,6 +303,8 @@ def _result_is_better(
         The best result so far.
     metrics : list[str]
         The metrics to evaluate the dataset on.
+    iterations : int
+        The number of iterations to run the comparison for.
 
     Returns
     -------
@@ -280,10 +316,16 @@ def _result_is_better(
 
     for metric in metrics:
         if metric.higher_is_better:
-            if result.results[metric.name][1] < best_result.results[metric.name][1]:
+            if (
+                result.results[metric.name][iterations]
+                < best_result.results[metric.name][iterations]
+            ):
                 return False
         else:
-            if result.results[metric.name][1] > best_result.results[metric.name][1]:
+            if (
+                result.results[metric.name][iterations]
+                > best_result.results[metric.name][iterations]
+            ):
                 return False
     else:
         return True

@@ -1,5 +1,5 @@
 """Dataset class to manage graphs and optional labels."""
-
+import copy
 import lzma
 import pickle
 from typing import List, Tuple
@@ -80,15 +80,47 @@ class Dataset:
             The Dataset.
         """
         import dgl.backend as F
+        import dgl
 
-        with_graph_labels = isinstance(dgl_dataset[0], tuple)
-        first_graph = dgl_dataset[0][0] if with_graph_labels else dgl_dataset[0]
-        with_node_labels = "label" in first_graph.ndata
-        with_edge_labels = (
-            ("e_type" in first_graph.edata)
-            or ("rel_type" in first_graph.edata)
-            or ("etype" in first_graph.edata)
-        )
+        if dgl_dataset.name.startswith("ogbn"):
+            # hack to get around the fact that the ogbn datasets
+            # are badly formed DGL datasets
+            with_graph_labels = False
+            with_node_labels = True
+            with_edge_labels = False
+            # add labels to the graph - we do not admit heterogeneous graphs
+            first_graph = dgl_dataset.graph[0]
+            first_graph.ndata["label"] = dgl_dataset.labels.flatten()
+            dgl_dataset.__getitem__ = lambda i: dgl_dataset.graph[i]
+        elif dgl_dataset.name.startswith("ogbl"):
+            # hack to get around the fact that the ogbl datasets
+            # are badly formed DGL datasets
+            with_graph_labels = False
+            with_node_labels = False
+            with_edge_labels = True
+            # add labels to the graph - we do not admit heterogeneous graphs
+            edge_split =  dgl_dataset.get_edge_split()
+            first_graph = dgl_dataset.graph[0]
+            pos_edges = F.cat([edge_split['train']['edge'], edge_split['valid']['edge'], edge_split['test']['edge']], dim=0)
+            neg_edges = F.cat([edge_split['valid']['edge_neg'], edge_split['test']['edge_neg']], dim=0)
+            # we have edge indices, so we need to set the type of these edges
+            # we do this by adding these edges to the graph, then removing duplicates
+            # by calling to_simple
+            # FIXME: neg-pos edge handling, currently we cannot distingusih non-given edges and assign negative
+            first_graph.add_edges(pos_edges[:, 0], pos_edges[:, 1], data={"e_type": F.zeros_like(pos_edges[:, 0]) + 1})
+            first_graph.add_edges(neg_edges[:, 0], neg_edges[:, 1], data={"e_type": F.zeros_like(neg_edges[:, 0])})
+            first_graph = dgl.to_simple(first_graph, return_counts=None, writeback_mapping=False, copy_ndata =True, copy_edata=True, aggregator="sum")
+            dgl_dataset.__getitem__ = lambda i: dgl_dataset.graph[i]
+        else:
+            with_graph_labels = isinstance(dgl_dataset[0], tuple)
+            first_graph = dgl_dataset[0][0] if with_graph_labels else dgl_dataset[0]
+            with_node_labels = "label" in first_graph.ndata
+            with_edge_labels = (
+                ("e_type" in first_graph.edata)
+                or ("rel_type" in first_graph.edata)
+                or ("etype" in first_graph.edata)
+            )
+
         node_attr = list(first_graph.ndata.keys())
         edge_attr = list(first_graph.edata.keys())
 
@@ -143,6 +175,7 @@ class Dataset:
 
         # Remove superfluous attributes and convert tensors to lists
         # Also remove the node_label attribute if exists
+        graphs = list(graphs)
         attrs_to_remove = [
             "_ID",
             "id",
@@ -153,7 +186,7 @@ class Dataset:
             "test_mask",
             edge_label_attr,
         ]
-        for graph in graphs:
+        for idx, graph in enumerate(graphs):
             for attr in attrs_to_remove:
                 if attr in graph.vs.attributes():
                     del graph.vs[attr]
@@ -162,15 +195,18 @@ class Dataset:
                     del graph.es[attr]
             for attr in graph.vs.attributes():
                 graph.vs[attr] = [
-                    np.squeeze(F.asnumpy(x)).tolist() for x in graph.vs[attr]
+                    np.squeeze(F.asnumpy(x).astype(float).round(2)).tolist()
+                    for x in graph.vs[attr]
                 ]
             for attr in graph.es.attributes():
                 graph.es[attr] = [
-                    np.squeeze(F.asnumpy(x)).tolist() for x in graph.es[attr]
+                    np.squeeze(F.asnumpy(x).astype(float).round(2)).tolist()
+                    for x in graph.es[attr]
                 ]
+            graphs[idx] = graph
 
         return cls(
-            list(graphs),
+            graphs,
             labels,
             node_labels,
             edge_labels,
@@ -358,13 +394,4 @@ class Dataset:
         copy : Dataset
             A copy of the dataset.
         """
-        return Dataset(
-            graphs=[graph.copy() for graph in self.graphs],
-            labels=self.labels.copy() if self.labels is not None else None,
-            node_labels=self.node_labels.copy()
-            if self.node_labels is not None
-            else None,
-            edge_labels=self.edge_labels.copy()
-            if self.edge_labels is not None
-            else None,
-        )
+        return copy.deepcopy(self)

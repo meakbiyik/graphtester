@@ -427,7 +427,7 @@ def _init_node_labels(
             # of the label.
             hash_funcs = []
             for attr in attribute_labels[0]:
-                if len(str(attr)) > 100:
+                if len(str(attr)) > 20:
                     hash_funcs.append(lambda a: str(hash(str(a))))
                 else:
                     hash_funcs.append(str)

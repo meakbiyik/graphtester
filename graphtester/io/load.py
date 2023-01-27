@@ -53,8 +53,6 @@ DATASETS = {
     "COLLAB": lambda dgl: dgl.data.TUDataset("COLLAB"),
     "REDDIT-BINARY": lambda dgl: dgl.data.TUDataset("REDDIT-BINARY"),
     "REDDIT-MULTI-5K": lambda dgl: dgl.data.TUDataset("REDDIT-MULTI-5K"),
-    # GIN datasets
-    "PTC": lambda dgl: dgl.data.GINDataset("PTC", False),
     # OGB datasets
     # graph classification
     "ogbg-molbace": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-molbace"),
@@ -66,7 +64,14 @@ DATASETS = {
     "ogbg-moltox21": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-moltox21"),
     "ogbg-moltoxcast": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-moltoxcast"),
     # node classification
+    "ogbn-arxiv": lambda ogbn: ogbn.DglNodePropPredDataset("ogbn-arxiv"),
     "ogbn-proteins": lambda ogbn: ogbn.DglNodePropPredDataset("ogbn-proteins"),
+    "ogbn-products": lambda ogbn: ogbn.DglNodePropPredDataset("ogbn-products"),
+    # link prediction
+    # "ogbl-collab": lambda ogbl: ogbl.DglLinkPropPredDataset("ogbl-collab"),
+    # "ogbl-ddi": lambda ogbl: ogbl.DglLinkPropPredDataset("ogbl-ddi"),
+    # "ogbl-ppa": lambda ogbl: ogbl.DglLinkPropPredDataset("ogbl-ppa"),
+    # "ogbl-citation2": lambda ogbl: ogbl.DglLinkPropPredDataset("ogbl-citation2"),
     # graph regression
     "ogbg-molesol": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-molesol"),
     "ogbg-molfreesolv": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-molfreesolv"),
@@ -79,7 +84,8 @@ DATASETS = {
     "CoauthorPhysics": lambda dgl: dgl.data.CoauthorPhysicsDataset(),
     "AmazonCoBuyComputer": lambda dgl: dgl.data.AmazonCoBuyComputerDataset(),
     # DGL link prediction datasets
-    "FB15k237": lambda dgl: dgl.data.FB15k237Dataset(),
+    # "FB15k237": lambda dgl: dgl.data.FB15k237Dataset(),
+    # "WN18Dataset": lambda dgl: dgl.data.WN18Dataset(),
 }
 
 
@@ -171,6 +177,11 @@ def _load_dataset(
         ogb_dataset = DATASETS[name](ogb)
         return Dataset.from_dgl(ogb_dataset, labels, node_labels, edge_labels)
 
+    if name.startswith("ogbl"):
+        ogb = _import_ogbl()
+        ogb_dataset = DATASETS[name](ogb)
+        return Dataset.from_dgl(ogb_dataset, labels, node_labels, edge_labels)
+
     # Otherwise a DGL dataset
     dgl = _import_dgl()
     dgl_dataset = DATASETS[name](dgl)
@@ -195,7 +206,7 @@ def _import_ogbg():
         import ogb.graphproppred as ogbg
     except ModuleNotFoundError:
         raise ModuleNotFoundError(
-            "ogb is used for OGB datasets, which requires" "PyTorch to be installed."
+            "ogb is used for OGB datasets, which requires PyTorch to be installed."
         )
     return ogbg
 
@@ -206,9 +217,20 @@ def _import_ogbn():
         import ogb.nodeproppred as ogbn
     except ModuleNotFoundError:
         raise ModuleNotFoundError(
-            "ogb is used for OGB datasets, which requires" "PyTorch to be installed."
+            "ogb is used for OGB datasets, which requires PyTorch to be installed."
         )
     return ogbn
+
+
+def _import_ogbl():
+    """Import ogb.linkpropped."""
+    try:
+        import ogb.linkproppred as ogbl
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError(
+            "ogb is used for OGB datasets, which requires PyTorch to be installed."
+        )
+    return ogbl
 
 
 def _load_graphs(
