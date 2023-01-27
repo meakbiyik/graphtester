@@ -143,7 +143,16 @@ class Dataset:
 
         # Remove superfluous attributes and convert tensors to lists
         # Also remove the node_label attribute if exists
-        attrs_to_remove = ["_ID", "id", "_nx_name", "label", edge_label_attr]
+        attrs_to_remove = [
+            "_ID",
+            "id",
+            "_nx_name",
+            "label",
+            "train_mask",
+            "val_mask",
+            "test_mask",
+            edge_label_attr,
+        ]
         for graph in graphs:
             for attr in attrs_to_remove:
                 if attr in graph.vs.attributes():
@@ -287,6 +296,8 @@ class Dataset:
         return Dataset(
             graphs=self.graphs + other.graphs,
             labels=self.labels + other.labels,
+            node_labels=self.node_labels + other.node_labels,
+            edge_labels=self.edge_labels + other.edge_labels,
         )
 
     def __contains__(self, graph: ig.Graph) -> bool:
@@ -317,7 +328,12 @@ class Dataset:
         equal : bool
             Whether the datasets are equal.
         """
-        return self.graphs == other.graphs and self.labels == other.labels
+        return (
+            self.graphs == other.graphs
+            and self.labels == other.labels
+            and self.node_labels == other.node_labels
+            and self.edge_labels == other.edge_labels
+        )
 
     def __ne__(self, other: "Dataset") -> bool:
         """Check if two datasets are not equal.
@@ -345,4 +361,10 @@ class Dataset:
         return Dataset(
             graphs=[graph.copy() for graph in self.graphs],
             labels=self.labels.copy() if self.labels is not None else None,
+            node_labels=self.node_labels.copy()
+            if self.node_labels is not None
+            else None,
+            edge_labels=self.edge_labels.copy()
+            if self.edge_labels is not None
+            else None,
         )

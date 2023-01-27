@@ -49,11 +49,17 @@ class _Metric:
         if self.type == "graph":
             return self._evaluator(graphs, hashes, labels)
         elif self.type == "node":
-            flat_node_hashes = [hsh for hshs in node_hashes for hsh in hshs]
+            flat_node_hashes = {
+                graph_index: [hsh for hshs in hshs for hsh in hshs]
+                for graph_index, hshs in node_hashes.items()
+            }
             flat_node_labels = [lbl for lbls in node_labels for lbl in lbls]
             return self._evaluator(graphs, flat_node_hashes, flat_node_labels)
         elif self.type == "edge":
-            flat_edge_hashes = [hsh for hshs in edge_hashes for hsh in hshs]
+            flat_edge_hashes = {
+                graph_index: [hsh for hshs in hshs for hsh in hshs]
+                for graph_index, hshs in edge_hashes.items()
+            }
             flat_edge_labels = [lbl for lbls in edge_labels for lbl in lbls]
             return self._evaluator(graphs, flat_edge_hashes, flat_edge_labels)
 
@@ -114,20 +120,20 @@ DEFAULT_METRICS = {
         _estimate_upper_bound_accuracy,
         1.0,
     ),
-    "upper_bound_mse": _Metric(
-        "upper_bound_mse", "Upper Bound MSE", False, "graph", _estimate_mse, 0.0
+    "lower_bound_mse": _Metric(
+        "lower_bound_mse", "Lower Bound MSE", False, "graph", _estimate_mse, 0.0
     ),
-    "upper_bound_mse_node": _Metric(
-        "upper_bound_mse_node",
-        "Upper Bound MSE (Node)",
+    "lower_bound_mse_node": _Metric(
+        "lower_bound_mse_node",
+        "Lower Bound MSE (Node)",
         False,
         "node",
         _estimate_mse,
         0.0,
     ),
-    "upper_bound_mse_edge": _Metric(
-        "upper_bound_mse_edge",
-        "Upper Bound MSE (Edge)",
+    "lower_bound_mse_edge": _Metric(
+        "lower_bound_mse_edge",
+        "Lower Bound MSE (Edge)",
         False,
         "edge",
         _estimate_mse,

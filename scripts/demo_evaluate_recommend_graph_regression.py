@@ -14,13 +14,13 @@ for dataset_name in dataset_names:
     dataset = gt.load(dataset_name)
     print(dataset)
 
-    metrics = ["upper_bound_mse"]
+    metrics = ["lower_bound_mse"]
 
     # Evaluate the dataset
     evaluation = gt.evaluate(dataset, metrics=metrics)
     print(evaluation)
 
-    if evaluation.results["upper_bound_mse"][1] == 1:
+    if evaluation.results["lower_bound_mse"][1] == 1:
         print("Dataset is fully identifiable in one step, with node features.")
     else:
         # Recommend features to add to the dataset
