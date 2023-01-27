@@ -10,9 +10,7 @@ from graphtester.io.load import DATASETS
 
 MULTIPROCESSING = True
 
-datasets_to_evaluate = [
-    dataset for dataset in DATASETS if not dataset.startswith("GT")
-]
+datasets_to_evaluate = [dataset for dataset in DATASETS if not dataset.startswith("GT")]
 
 
 def select_metric(dataset: Dataset) -> _Metric:
@@ -74,7 +72,9 @@ def analyze_dataset(dataset_name: str):
             iterations=iterations,
         )
         # pickle the evaluation
-        with open(f"evaluation_{dataset_name}_{state}_{is_regression}.pickle", "wb") as f:
+        with open(
+            f"evaluation_{dataset_name}_{state}_{is_regression}.pickle", "wb"
+        ) as f:
             pickle.dump(evaluation, f)
 
         print(evaluation)
@@ -98,7 +98,7 @@ def analyze_dataset(dataset_name: str):
             pickle.dump(recommendation, f)
 
         print(recommendation)
-    
+
     # remove dataset from dgl cache afterwards
     dataset_path = "~/.dgl/" + dataset_name
     shutil.rmtree(dataset_path, ignore_errors=True)

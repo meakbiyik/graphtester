@@ -37,7 +37,7 @@ class RecommendationResult:
         iterations : int
             The number of iterations that were performed.
         """
-        self.dataset = dataset
+        self.dataset_name = dataset.name
         self.results = results
         self.metrics = metrics
         self.iterations = iterations
@@ -45,7 +45,7 @@ class RecommendationResult:
 
     def __repr__(self) -> str:
         """Return the representation of a recommendation result."""
-        return f"RecommendationResult(dataset={self.dataset})"
+        return f"RecommendationResult(dataset={self.dataset_name})"
 
     def as_dataframe(self) -> pd.DataFrame:  # noqa: C901
         """Return the recommendation result as a pandas dataframe."""
@@ -93,7 +93,7 @@ class RecommendationResult:
         report = pd.concat(dataframes, axis=1, keys=states)
         report = report.set_index((states[0], "Feature count"))
         report.index.name = "Feature count"
-        report.name = self.dataset.name
+        report.name = self.dataset_name
         report = report.round(4)
         self._dataframe = report
         return report

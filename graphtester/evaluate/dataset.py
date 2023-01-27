@@ -182,7 +182,7 @@ class EvaluationResult:
         dataset : Dataset
             The dataset that was evaluated.
         """
-        self.dataset = dataset
+        self.dataset_name = dataset.name
         self.metrics = metrics
         self.results = results
         self._dataframe = None
