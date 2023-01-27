@@ -1,6 +1,7 @@
 """Demo script for the graphtester package."""
 import multiprocessing as mp
 import pickle
+import shutil
 
 import graphtester as gt
 from graphtester.evaluate.dataset import DEFAULT_METRICS, _Metric
@@ -97,6 +98,10 @@ def analyze_dataset(dataset_name: str):
             pickle.dump(recommendation, f)
 
         print(recommendation)
+    
+    # remove dataset from dgl cache afterwards
+    dataset_path = "~/.dgl/" + dataset_name
+    shutil.rmtree(dataset_path, ignore_errors=True)
 
 
 def analyze_dataset_with_skip(dataset_name: str):
