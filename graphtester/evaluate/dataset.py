@@ -189,7 +189,7 @@ class EvaluationResult:
 
     def __repr__(self):
         """Return a string representation of the object."""
-        return f"EvaluationResult({self.dataset.name})"
+        return f"EvaluationResult({self.dataset_name})"
 
     def as_dataframe(self) -> pd.DataFrame:
         """Create and return a tabular report of the evaluation."""
@@ -200,7 +200,7 @@ class EvaluationResult:
             data[metric.description] = self.results[metric.name]
         report = pd.DataFrame(data)
         report.index.rename("Iteration", inplace=True)
-        report.name = self.dataset.name
+        report.name = self.dataset_name
         report = report.round(4)
         self._dataframe = report
         return report

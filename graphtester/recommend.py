@@ -4,6 +4,7 @@ import pandas as pd
 from graphtester.evaluate.dataset import (
     DEFAULT_METRICS,
     EvaluationResult,
+    _clean_graphs,
     _Metric,
     evaluate,
 )
@@ -109,6 +110,7 @@ def recommend(
     max_feature_count=3,
     node_features=True,
     edge_features=True,
+    ignore_original_features=False,
     fast=True,
     iterations=1,
 ) -> RecommendationResult:
@@ -133,6 +135,8 @@ def recommend(
         Whether to recommend node features, by default True
     edge_features : bool, optional
         Whether to recommend edge features, by default True
+    ignore_original_features : bool, optional
+        Whether to ignore the original features of the dataset, by default False
     fast : bool, optional
         Whether to only use the features that are scalable to large datasets,
         by default True
@@ -146,6 +150,10 @@ def recommend(
     """
     if not isinstance(metrics[0], _Metric):
         metrics = [DEFAULT_METRICS[metric] for metric in metrics]
+
+    if ignore_original_features:
+        dataset = dataset.copy()
+        dataset.graphs = _clean_graphs(True, True, dataset.graphs)
 
     features_to_test = _determine_features_to_test(node_features, edge_features, fast)
 
