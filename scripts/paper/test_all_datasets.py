@@ -9,6 +9,9 @@ from graphtester.io.dataset import Dataset
 from graphtester.io.load import DATASETS
 
 MULTIPROCESSING = True
+ONLY_RECOMMENDATION = False
+WITH_ORIGINAL_FEATS = False
+WITH_ALL_ADDITIONAL_FEATS = False
 
 datasets_to_evaluate = [dataset for dataset in DATASETS if not dataset.startswith("GT")]
 
@@ -62,24 +65,30 @@ def analyze_dataset(dataset_name: str):
 
     iterations = 10
 
-    for state in states:
-        # Evaluate the dataset
-        evaluation = gt.evaluate(
-            dataset,
-            metrics=metrics,
-            ignore_node_features=state in ["without_features", "with_edge_features"],
-            ignore_edge_features=state in ["without_features", "with_node_features"],
-            iterations=iterations,
-        )
-        # pickle the evaluation
-        with open(
-            f"evaluation_{dataset_name}_{state}_{is_regression}.pickle", "wb"
-        ) as f:
-            pickle.dump(evaluation, f)
+    if not ONLY_RECOMMENDATION:
+        for state in states:
+            # Evaluate the dataset
+            evaluation = gt.evaluate(
+                dataset,
+                metrics=metrics,
+                ignore_node_features=state
+                in ["without_features", "with_edge_features"],
+                ignore_edge_features=state
+                in ["without_features", "with_node_features"],
+                iterations=iterations,
+            )
+            # pickle the evaluation
+            with open(
+                f"evaluation_{dataset_name}_{state}_{is_regression}.pickle", "wb"
+            ) as f:
+                pickle.dump(evaluation, f)
 
-        print(evaluation)
+            print(evaluation)
 
-    if evaluation.results[metrics[0].name][0] == metrics[0].best_value:
+    if (
+        not ONLY_RECOMMENDATION
+        and evaluation.results[metrics[0].name][0] == metrics[0].best_value
+    ):
         print(f"Dataset is fully solvable in 0 iterations.")
     else:
         # Recommend features to add to the dataset
@@ -89,12 +98,16 @@ def analyze_dataset(dataset_name: str):
             max_feature_count=1,
             node_features=True,
             edge_features=True,
+            ignore_original_features=not WITH_ORIGINAL_FEATS,
             iterations=iterations,
-            fast=True,
+            fast=not WITH_ALL_ADDITIONAL_FEATS,
         )
 
         # pickle the recommendation
-        with open(f"recommendation_{dataset_name}_{is_regression}.pickle", "wb") as f:
+        with open(
+            f"recommendation_{dataset_name}_{is_regression}_{WITH_ORIGINAL_FEATS}_{WITH_ALL_ADDITIONAL_FEATS}.pickle",
+            "wb",
+        ) as f:
             pickle.dump(recommendation, f)
 
         print(recommendation)
