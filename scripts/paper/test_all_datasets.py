@@ -10,7 +10,7 @@ from graphtester.io.load import DATASETS
 
 MULTIPROCESSING = True
 ONLY_RECOMMENDATION = False
-WITH_ORIGINAL_FEATS = False
+WITH_ORIGINAL_FEATS = True
 WITH_ALL_ADDITIONAL_FEATS = False
 
 datasets_to_evaluate = [dataset for dataset in DATASETS if not dataset.startswith("GT")]
