@@ -105,7 +105,9 @@ def analyze_dataset(dataset_name: str):
 
         # pickle the recommendation
         with open(
-            f"recommendation_{dataset_name}_{is_regression}_{WITH_ORIGINAL_FEATS}_{WITH_ALL_ADDITIONAL_FEATS}.pickle",
+            f"recommendation_{dataset_name}{'_regression' if is_regression else '_classification'}"
+            f"{'_without_original_feats' if not WITH_ORIGINAL_FEATS else ''}"
+            f"{'' if WITH_ALL_ADDITIONAL_FEATS else '_fast'}.pickle",
             "wb",
         ) as f:
             pickle.dump(recommendation, f)
