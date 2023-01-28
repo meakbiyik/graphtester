@@ -85,38 +85,32 @@ def analyze_dataset(dataset_name: str):
 
             print(evaluation)
 
-    if (
-        not ONLY_RECOMMENDATION
-        and evaluation.results[metrics[0].name][0] == metrics[0].best_value
-    ):
-        print(f"Dataset is fully solvable in 0 iterations.")
-    else:
-        # Recommend features to add to the dataset
-        recommendation = gt.recommend(
-            dataset,
-            metrics=metrics,
-            max_feature_count=1,
-            node_features=True,
-            edge_features=True,
-            ignore_original_features=not WITH_ORIGINAL_FEATS,
-            iterations=iterations,
-            fast=not WITH_ALL_ADDITIONAL_FEATS,
-        )
+        if evaluation.results[metrics[0].name][0] == metrics[0].best_value:
+            print(f"Dataset is fully solvable in 0 iterations.")
+            return
 
-        # pickle the recommendation
-        with open(
-            f"recommendation_{dataset_name}{'_regression' if is_regression else '_classification'}"
-            f"{'_without_original_feats' if not WITH_ORIGINAL_FEATS else ''}"
-            f"{'' if WITH_ALL_ADDITIONAL_FEATS else '_fast'}.pickle",
-            "wb",
-        ) as f:
-            pickle.dump(recommendation, f)
+    # Recommend features to add to the dataset
+    recommendation = gt.recommend(
+        dataset,
+        metrics=metrics,
+        max_feature_count=1,
+        node_features=True,
+        edge_features=True,
+        ignore_original_features=not WITH_ORIGINAL_FEATS,
+        iterations=iterations,
+        fast=not WITH_ALL_ADDITIONAL_FEATS,
+    )
 
-        print(recommendation)
+    # pickle the recommendation
+    with open(
+        f"recommendation_{dataset_name}{'_regression' if is_regression else '_classification'}"
+        f"{'_without_original_feats' if not WITH_ORIGINAL_FEATS else ''}"
+        f"{'' if WITH_ALL_ADDITIONAL_FEATS else '_fast'}.pickle",
+        "wb",
+    ) as f:
+        pickle.dump(recommendation, f)
 
-    # remove dataset from dgl cache afterwards
-    dataset_path = "~/.dgl/" + dataset_name
-    shutil.rmtree(dataset_path, ignore_errors=True)
+    print(recommendation)
 
 
 def analyze_dataset_with_skip(dataset_name: str):
