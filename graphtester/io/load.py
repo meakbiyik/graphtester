@@ -61,6 +61,7 @@ DATASETS = {
     "ogbg-molmuv": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-molmuv"),
     "ogbg-molsider": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-molsider"),
     "ogbg-molhiv": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-molhiv"),
+    "ogbg-molpcba": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-molpcba"),
     "ogbg-moltox21": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-moltox21"),
     "ogbg-moltoxcast": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-moltoxcast"),
     # node classification

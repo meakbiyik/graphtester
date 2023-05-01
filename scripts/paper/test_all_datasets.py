@@ -85,10 +85,6 @@ def analyze_dataset(dataset_name: str):
 
             print(evaluation)
 
-        if evaluation.results[metrics[0].name][0] == metrics[0].best_value:
-            print(f"Dataset is fully solvable in 0 iterations.")
-            return
-
     # Recommend features to add to the dataset
     recommendation = gt.recommend(
         dataset,

@@ -2,6 +2,7 @@
 *.txt
 *.gz
 scripts/dataset/
+*.png
 
 # Package-related
 *.pickle
