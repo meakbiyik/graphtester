@@ -1,8 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=test_all_datasets
-#SBATCH --output=scripts/logs/paper/test_all_datasets.out
-#SBATCH --error=scripts/logs/paper/test_all_datasets.err
-#SBATCH --time=1-00:00:00
+#SBATCH --job-name=graphtester
 #SBATCH --mem=200G
 #SBATCH --cpus-per-task=12
 
