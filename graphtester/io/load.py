@@ -14,12 +14,15 @@ import networkx as nx
 
 from graphtester.io.dataset import Dataset
 
-GRAPHTESTER_CACHE_DIR = None
 if os.getenv("GRAPHTESTER_CACHE_DIR") is not None:
     GRAPHTESTER_CACHE_DIR = Path(os.getenv("GRAPHTESTER_CACHE_DIR"))
     GRAPHTESTER_CACHE_DIR.mkdir(parents=True, exist_ok=True)
     dgl_param = {"raw_dir": str(GRAPHTESTER_CACHE_DIR)}
     ogb_param = {"root": str(GRAPHTESTER_CACHE_DIR)}
+else:
+    GRAPHTESTER_CACHE_DIR = None
+    dgl_param = {}
+    ogb_param = {}
 
 DATASETS = {
     # Homebrewed datasets
