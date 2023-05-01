@@ -5,7 +5,7 @@ or load a real dataset. Graphtester provides some real datasets that can be load
 by their names similar to the synthetic datasets. Alternatively, the user can
 provide a list of networkx or igraph graphs to be used for testing.
 """
-
+import os
 from pathlib import Path
 from typing import List
 
@@ -14,79 +14,86 @@ import networkx as nx
 
 from graphtester.io.dataset import Dataset
 
+GRAPHTESTER_CACHE_DIR = None
+if os.getenv("GRAPHTESTER_CACHE_DIR") is not None:
+    GRAPHTESTER_CACHE_DIR = Path(os.getenv("GRAPHTESTER_CACHE_DIR"))
+    GRAPHTESTER_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    dgl_param = {"raw_dir": str(GRAPHTESTER_CACHE_DIR)}
+    ogb_param = {"root": str(GRAPHTESTER_CACHE_DIR)}
+
 DATASETS = {
     # Homebrewed datasets
     "GT": Path(__file__).parent / "datasets" / "GT.pkl",
     "GT-small": Path(__file__).parent / "datasets" / "GT-small.pkl",
     # TU datasets
     # Small molecules - TU
-    "AIDS": lambda dgl: dgl.data.TUDataset("AIDS"),
-    "BZR": lambda dgl: dgl.data.TUDataset("BZR"),
-    "BZR_MD": lambda dgl: dgl.data.TUDataset("BZR_MD"),
-    "COX2": lambda dgl: dgl.data.TUDataset("COX2"),
-    "COX2_MD": lambda dgl: dgl.data.TUDataset("COX2_MD"),
-    "DHFR": lambda dgl: dgl.data.TUDataset("DHFR"),
-    "DHFR_MD": lambda dgl: dgl.data.TUDataset("DHFR_MD"),
-    "ER_MD": lambda dgl: dgl.data.TUDataset("ER_MD"),
-    "FRANKENSTEIN": lambda dgl: dgl.data.TUDataset("FRANKENSTEIN"),
-    "Mutagenicity": lambda dgl: dgl.data.TUDataset("Mutagenicity"),
-    "MUTAG": lambda dgl: dgl.data.TUDataset("MUTAG"),
-    "NCI1": lambda dgl: dgl.data.TUDataset("NCI1"),
-    "NCI109": lambda dgl: dgl.data.TUDataset("NCI109"),
-    "PTC_FM": lambda dgl: dgl.data.TUDataset("PTC_FM"),
-    "PTC_FR": lambda dgl: dgl.data.TUDataset("PTC_FR"),
-    "PTC_MM": lambda dgl: dgl.data.TUDataset("PTC_MM"),
-    "PTC_MR": lambda dgl: dgl.data.TUDataset("PTC_MR"),
+    "AIDS": lambda dgl: dgl.data.TUDataset("AIDS", **dgl_param),
+    "BZR": lambda dgl: dgl.data.TUDataset("BZR", **dgl_param),
+    "BZR_MD": lambda dgl: dgl.data.TUDataset("BZR_MD", **dgl_param),
+    "COX2": lambda dgl: dgl.data.TUDataset("COX2", **dgl_param),
+    "COX2_MD": lambda dgl: dgl.data.TUDataset("COX2_MD", **dgl_param),
+    "DHFR": lambda dgl: dgl.data.TUDataset("DHFR", **dgl_param),
+    "DHFR_MD": lambda dgl: dgl.data.TUDataset("DHFR_MD", **dgl_param),
+    "ER_MD": lambda dgl: dgl.data.TUDataset("ER_MD", **dgl_param),
+    "FRANKENSTEIN": lambda dgl: dgl.data.TUDataset("FRANKENSTEIN", **dgl_param),
+    "Mutagenicity": lambda dgl: dgl.data.TUDataset("Mutagenicity", **dgl_param),
+    "MUTAG": lambda dgl: dgl.data.TUDataset("MUTAG", **dgl_param),
+    "NCI1": lambda dgl: dgl.data.TUDataset("NCI1", **dgl_param),
+    "NCI109": lambda dgl: dgl.data.TUDataset("NCI109", **dgl_param),
+    "PTC_FM": lambda dgl: dgl.data.TUDataset("PTC_FM", **dgl_param),
+    "PTC_FR": lambda dgl: dgl.data.TUDataset("PTC_FR", **dgl_param),
+    "PTC_MM": lambda dgl: dgl.data.TUDataset("PTC_MM", **dgl_param),
+    "PTC_MR": lambda dgl: dgl.data.TUDataset("PTC_MR", **dgl_param),
     # Bioinformatics - TU
-    "ENZYMES": lambda dgl: dgl.data.TUDataset("ENZYMES"),
-    "DD": lambda dgl: dgl.data.TUDataset("DD"),
-    "PROTEINS": lambda dgl: dgl.data.TUDataset("PROTEINS"),
+    "ENZYMES": lambda dgl: dgl.data.TUDataset("ENZYMES", **dgl_param),
+    "DD": lambda dgl: dgl.data.TUDataset("DD", **dgl_param),
+    "PROTEINS": lambda dgl: dgl.data.TUDataset("PROTEINS", **dgl_param),
     # Computer vision - TU
-    "Fingerprint": lambda dgl: dgl.data.TUDataset("Fingerprint"),
-    "Cuneiform": lambda dgl: dgl.data.TUDataset("Cuneiform"),
-    "COIL-DEL": lambda dgl: dgl.data.TUDataset("COIL-DEL"),
-    "COIL-RAG": lambda dgl: dgl.data.TUDataset("COIL-RAG"),
-    "MSRC_9": lambda dgl: dgl.data.TUDataset("MSRC_9"),
+    "Fingerprint": lambda dgl: dgl.data.TUDataset("Fingerprint", **dgl_param),
+    "Cuneiform": lambda dgl: dgl.data.TUDataset("Cuneiform", **dgl_param),
+    "COIL-DEL": lambda dgl: dgl.data.TUDataset("COIL-DEL", **dgl_param),
+    "COIL-RAG": lambda dgl: dgl.data.TUDataset("COIL-RAG", **dgl_param),
+    "MSRC_9": lambda dgl: dgl.data.TUDataset("MSRC_9", **dgl_param),
     # Social networks - TU
-    "IMDB-BINARY": lambda dgl: dgl.data.TUDataset("IMDB-BINARY"),
-    "IMDB-MULTI": lambda dgl: dgl.data.TUDataset("IMDB-MULTI"),
-    "COLLAB": lambda dgl: dgl.data.TUDataset("COLLAB"),
-    "REDDIT-BINARY": lambda dgl: dgl.data.TUDataset("REDDIT-BINARY"),
-    "REDDIT-MULTI-5K": lambda dgl: dgl.data.TUDataset("REDDIT-MULTI-5K"),
+    "IMDB-BINARY": lambda dgl: dgl.data.TUDataset("IMDB-BINARY", **dgl_param),
+    "IMDB-MULTI": lambda dgl: dgl.data.TUDataset("IMDB-MULTI", **dgl_param),
+    "COLLAB": lambda dgl: dgl.data.TUDataset("COLLAB", **dgl_param),
+    "REDDIT-BINARY": lambda dgl: dgl.data.TUDataset("REDDIT-BINARY", **dgl_param),
+    "REDDIT-MULTI-5K": lambda dgl: dgl.data.TUDataset("REDDIT-MULTI-5K", **dgl_param),
     # OGB datasets
     # graph classification
-    "ogbg-molbace": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-molbace"),
-    "ogbg-molbbbp": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-molbbbp"),
-    "ogbg-molclintox": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-molclintox"),
-    "ogbg-molmuv": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-molmuv"),
-    "ogbg-molsider": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-molsider"),
-    "ogbg-molhiv": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-molhiv"),
-    "ogbg-molpcba": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-molpcba"),
-    "ogbg-moltox21": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-moltox21"),
-    "ogbg-moltoxcast": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-moltoxcast"),
+    "ogbg-molbace": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-molbace", **ogb_param),
+    "ogbg-molbbbp": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-molbbbp", **ogb_param),
+    "ogbg-molclintox": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-molclintox", **ogb_param),
+    "ogbg-molmuv": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-molmuv", **ogb_param),
+    "ogbg-molsider": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-molsider", **ogb_param),
+    "ogbg-molhiv": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-molhiv", **ogb_param),
+    "ogbg-molpcba": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-molpcba", **ogb_param),
+    "ogbg-moltox21": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-moltox21", **ogb_param),
+    "ogbg-moltoxcast": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-moltoxcast", **ogb_param),
     # node classification
-    "ogbn-arxiv": lambda ogbn: ogbn.DglNodePropPredDataset("ogbn-arxiv"),
-    "ogbn-proteins": lambda ogbn: ogbn.DglNodePropPredDataset("ogbn-proteins"),
-    "ogbn-products": lambda ogbn: ogbn.DglNodePropPredDataset("ogbn-products"),
+    "ogbn-arxiv": lambda ogbn: ogbn.DglNodePropPredDataset("ogbn-arxiv", **ogb_param),
+    "ogbn-proteins": lambda ogbn: ogbn.DglNodePropPredDataset("ogbn-proteins", **ogb_param),
+    "ogbn-products": lambda ogbn: ogbn.DglNodePropPredDataset("ogbn-products", **ogb_param),
     # link prediction
-    # "ogbl-collab": lambda ogbl: ogbl.DglLinkPropPredDataset("ogbl-collab"),
-    # "ogbl-ddi": lambda ogbl: ogbl.DglLinkPropPredDataset("ogbl-ddi"),
-    # "ogbl-ppa": lambda ogbl: ogbl.DglLinkPropPredDataset("ogbl-ppa"),
-    # "ogbl-citation2": lambda ogbl: ogbl.DglLinkPropPredDataset("ogbl-citation2"),
+    # "ogbl-collab": lambda ogbl: ogbl.DglLinkPropPredDataset("ogbl-collab", **ogb_param),
+    # "ogbl-ddi": lambda ogbl: ogbl.DglLinkPropPredDataset("ogbl-ddi", **ogb_param),
+    # "ogbl-ppa": lambda ogbl: ogbl.DglLinkPropPredDataset("ogbl-ppa", **ogb_param),
+    # "ogbl-citation2": lambda ogbl: ogbl.DglLinkPropPredDataset("ogbl-citation2", **ogb_param),
     # graph regression
-    "ogbg-molesol": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-molesol"),
-    "ogbg-molfreesolv": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-molfreesolv"),
-    "ogbg-mollipo": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-mollipo"),
+    "ogbg-molesol": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-molesol", **ogb_param),
+    "ogbg-molfreesolv": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-molfreesolv", **ogb_param),
+    "ogbg-mollipo": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-mollipo", **ogb_param),
     # DGL node classification datasets
-    "Cora": lambda dgl: dgl.data.CoraGraphDataset(),
-    "Citeseer": lambda dgl: dgl.data.CiteseerGraphDataset(),
-    "Pubmed": lambda dgl: dgl.data.PubmedGraphDataset(),
-    "CoauthorCS": lambda dgl: dgl.data.CoauthorCSDataset(),
-    "CoauthorPhysics": lambda dgl: dgl.data.CoauthorPhysicsDataset(),
-    "AmazonCoBuyComputer": lambda dgl: dgl.data.AmazonCoBuyComputerDataset(),
+    "Cora": lambda dgl: dgl.data.CoraGraphDataset(**dgl_param),
+    "Citeseer": lambda dgl: dgl.data.CiteseerGraphDataset(**dgl_param),
+    "Pubmed": lambda dgl: dgl.data.PubmedGraphDataset(**dgl_param),
+    "CoauthorCS": lambda dgl: dgl.data.CoauthorCSDataset(**dgl_param),
+    "CoauthorPhysics": lambda dgl: dgl.data.CoauthorPhysicsDataset(**dgl_param),
+    "AmazonCoBuyComputer": lambda dgl: dgl.data.AmazonCoBuyComputerDataset(**dgl_param),
     # DGL link prediction datasets
-    # "FB15k237": lambda dgl: dgl.data.FB15k237Dataset(),
-    # "WN18Dataset": lambda dgl: dgl.data.WN18Dataset(),
+    # "FB15k237": lambda dgl: dgl.data.FB15k237Dataset(**dgl_param),
+    # "WN18Dataset": lambda dgl: dgl.data.WN18Dataset(**dgl_param),
 }
 
 
