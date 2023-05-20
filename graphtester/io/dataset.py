@@ -1,6 +1,7 @@
 """Dataset class to manage graphs and optional labels."""
 import copy
 import lzma
+import numbers
 import pickle
 from typing import List, Tuple
 
@@ -173,9 +174,101 @@ class Dataset:
         if edge_labels is None and with_edge_labels:
             edge_labels = list(_edge_labels)
 
+        graphs = list(graphs)
+        graphs = cls._clean_graphs(graphs, edge_label_attr)
+
+        return cls(
+            graphs,
+            labels,
+            node_labels,
+            edge_labels,
+            dgl_dataset.name,
+        )
+    
+    @classmethod
+    def from_pyg(cls,
+        pyg_dataset,
+        labels: List[float] = None,
+        node_labels: List[List[float]] = None,
+        edge_labels: List[List[float]] = None,
+    ) -> "Dataset":
+        """Load a Dataset from a Pytorch Geometric dataset.
+
+        Parameters
+        ----------
+        pyg_dataset : torch_geometric.data.Dataset
+            The Pytorch Geometric dataset.
+        labels : List[float], optional
+            The graph labels.
+        node_labels : List[List[float]], optional
+            The node labels.
+        edge_labels : List[List[float]], optional
+            The edge labels.
+
+        Returns
+        -------
+        dataset : Dataset
+            The Dataset.
+        """
+        from torch_geometric.utils import to_networkx
+        from torch_geometric.data import Data
+
+        if hasattr(pyg_dataset[0], "y"):
+            with_node_labels = pyg_dataset[0].y.shape[0] == pyg_dataset[0].num_nodes
+            with_graph_labels = not with_node_labels
+        else:
+            with_graph_labels, with_node_labels = False, False
+        with_edge_labels = hasattr(pyg_dataset, "get_edge_split")
+        # TODO: edge labels
+
+        graphs, _labels, _node_labels = [], [], []
+        for i in range(len(pyg_dataset)):
+            data_obj: Data = pyg_dataset[i]
+            node_attributes = data_obj.node_attrs()
+            edge_attributes = [a for a in data_obj.edge_attrs() if a != "edge_index"]
+            graph = to_networkx(data_obj, node_attrs=node_attributes, edge_attrs=edge_attributes)
+            graphs.append(ig.Graph.from_networkx(graph))
+            if with_graph_labels:
+                if data_obj.y.shape[0] > 1:
+                    raise ValueError("Multi-task classification not yet supported.")
+                else:
+                    _labels.append(float(data_obj.y))
+            if with_node_labels:
+                _node_labels.append([float(lbl) for lbl in data_obj.x.tolist()])
+
+        if labels is None and with_graph_labels:
+            labels = list(_labels)
+        if node_labels is None and with_node_labels:
+            node_labels = list(_node_labels)
+
+        graphs = cls._clean_graphs(graphs)
+
+        return cls(
+            graphs,
+            labels,
+            node_labels,
+            edge_labels,
+        )
+    
+    @staticmethod
+    def _clean_graphs(graphs: list[ig.Graph], additional_attrs_to_remove=None) -> ig.Graph:
+        try:
+            from dgl.backend import asnumpy
+        except ImportError:
+            # assume pytorch
+            asnumpy = lambda x: x.numpy(force=True)
+        
+        def simplify(val):
+            if isinstance(val, np.ndarray):
+                return val.astype(float).round(2).tolist()
+            elif isinstance(val, numbers.Number):
+                return float(val)
+            else:
+                return np.squeeze(asnumpy(val).astype(float).round(2)).tolist()
+        
         # Remove superfluous attributes and convert tensors to lists
         # Also remove the node_label attribute if exists
-        graphs = list(graphs)
+        additional_attrs_to_remove = additional_attrs_to_remove or []
         attrs_to_remove = [
             "_ID",
             "id",
@@ -184,7 +277,7 @@ class Dataset:
             "train_mask",
             "val_mask",
             "test_mask",
-            edge_label_attr,
+            *additional_attrs_to_remove,
         ]
         for idx, graph in enumerate(graphs):
             for attr in attrs_to_remove:
@@ -195,23 +288,17 @@ class Dataset:
                     del graph.es[attr]
             for attr in graph.vs.attributes():
                 graph.vs[attr] = [
-                    np.squeeze(F.asnumpy(x).astype(float).round(2)).tolist()
+                    simplify(x)
                     for x in graph.vs[attr]
                 ]
             for attr in graph.es.attributes():
                 graph.es[attr] = [
-                    np.squeeze(F.asnumpy(x).astype(float).round(2)).tolist()
+                    simplify(x)
                     for x in graph.es[attr]
                 ]
             graphs[idx] = graph
 
-        return cls(
-            graphs,
-            labels,
-            node_labels,
-            edge_labels,
-            dgl_dataset.name,
-        )
+        return graphs
 
     @classmethod
     def from_pickle(cls, path: str) -> "Dataset":
@@ -240,6 +327,35 @@ class Dataset:
         """
         with lzma.open(path, "wb") as file:
             pickle.dump(self, file)
+
+    def subsample(self, n: int, seed: int = 0) -> "Dataset":
+        """Subsample the dataset.
+
+        Parameters
+        ----------
+        n : int
+            The number of graphs to subsample.
+        seed : int
+            The random seed.
+
+        Returns
+        -------
+        dataset : Dataset
+            The subsampled dataset.
+        """
+        generator = np.random.default_rng(seed)
+        indices = generator.choice(len(self), n, replace=False)
+        return Dataset(
+            [self.graphs[i] for i in indices],
+            [self.labels[i] for i in indices] if self.labels is not None else None,
+            [self.node_labels[i] for i in indices]
+            if self.node_labels is not None
+            else None,
+            [self.edge_labels[i] for i in indices]
+            if self.edge_labels is not None
+            else None,
+            self.name,
+        )
 
     @property
     def is_labeled(self) -> bool:
