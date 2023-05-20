@@ -4,4 +4,5 @@
 #SBATCH --cpus-per-task=8
 
 # Run the test_all_datasets.py script
-poetry run yes | python ./scripts/paper/test_all_datasets.py
+yes | poetry run python ./scripts/paper/test_all_datasets.py
+
