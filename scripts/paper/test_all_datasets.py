@@ -7,7 +7,7 @@ from graphtester.evaluate.dataset import DEFAULT_METRICS, _Metric
 from graphtester.io.dataset import Dataset
 from graphtester.io.load import DATASETS
 
-MULTIPROCESSING = False
+MULTIPROCESSING = True
 ONLY_RECOMMENDATION = True
 WITH_ORIGINAL_FEATS = True
 FEATURES_TO_TEST = [
@@ -23,7 +23,6 @@ GRAPH_COUNT = 10000 # If the dataset has more graphs than this, it is subsampled
 
 datasets_to_skip = ["GT", "GT-small", "ZINC_FULL"]
 datasets_to_evaluate = [dataset for dataset in DATASETS if dataset not in datasets_to_skip]
-datasets_to_evaluate = ["ogbg-molbbbp"]
 
 def select_metric(dataset: Dataset) -> _Metric:
     """Select the metric to use for a dataset."""
