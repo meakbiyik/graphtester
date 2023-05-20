@@ -108,6 +108,7 @@ def recommend(
     dataset: Dataset,
     metrics: list[str],
     max_feature_count=3,
+    features_to_test=None,
     node_features=True,
     edge_features=True,
     ignore_original_features=False,
@@ -131,6 +132,9 @@ def recommend(
         The metrics to evaluate the dataset on.
     max_feature_count : int, optional
         The maximum number of features to combine into a set, by default 3
+    features_to_test : list[str], optional
+        The features to test, by default None. If None, all features will be tested,
+        depending on node_features, edge_features and fast arguments (see below).
     node_features : bool, optional
         Whether to recommend node features, by default True
     edge_features : bool, optional
@@ -139,7 +143,7 @@ def recommend(
         Whether to ignore the original features of the dataset, by default False
     fast : bool, optional
         Whether to only use the features that are scalable to large datasets,
-        by default True
+        by default True. Ignored if features_to_test is not None.
     iterations : int, optional
         The number of iterations to run the comparison for, by default 1
 
@@ -155,7 +159,13 @@ def recommend(
         dataset = dataset.copy()
         dataset.graphs = _clean_graphs(True, True, dataset.graphs)
 
-    features_to_test = _determine_features_to_test(node_features, edge_features, fast)
+    if features_to_test is None:
+        features_to_test = _determine_features_to_test(node_features, edge_features, fast)
+    else:
+        features_to_test = list(features_to_test)
+        for feature in features_to_test:
+            if feature not in VERTEX_LABELING_METHODS and feature not in EDGE_LABELING_METHODS:
+                raise ValueError(f"Unknown feature {feature}")
 
     has_node_features = bool(dataset.graphs[0].vertex_attributes())
     has_edge_features = bool(dataset.graphs[0].edge_attributes())

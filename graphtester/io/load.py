@@ -19,15 +19,26 @@ if os.getenv("GRAPHTESTER_CACHE_DIR") is not None:
     GRAPHTESTER_CACHE_DIR.mkdir(parents=True, exist_ok=True)
     dgl_param = {"raw_dir": str(GRAPHTESTER_CACHE_DIR)}
     ogb_param = {"root": str(GRAPHTESTER_CACHE_DIR)}
+    pyg_param = {"root": str(GRAPHTESTER_CACHE_DIR)}
 else:
     GRAPHTESTER_CACHE_DIR = None
-    dgl_param = {}
-    ogb_param = {}
+    cache_dir = Path(__file__).parent / ".gtcache"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    dgl_param = {"raw_dir": str(cache_dir)}
+    ogb_param = {"root": str(cache_dir)}
+    pyg_param = {"root": str(cache_dir)}
 
 DATASETS = {
     # Homebrewed datasets
     "GT": Path(__file__).parent / "datasets" / "GT.pkl",
     "GT-small": Path(__file__).parent / "datasets" / "GT-small.pkl",
+    # PyTorch geometric datasets
+    "ZINC_FULL": lambda pyg: pyg.datasets.ZINC(**pyg_param),
+    "ZINC": lambda pyg: pyg.datasets.ZINC(subset=True, **pyg_param),
+    "MNIST": lambda pyg: pyg.datasets.GNNBenchmarkDataset(name="MNIST", **pyg_param),
+    "CIFAR10": lambda pyg: pyg.datasets.GNNBenchmarkDataset(name="CIFAR10", **pyg_param),
+    "PATTERN": lambda pyg: pyg.datasets.GNNBenchmarkDataset(name="PATTERN", **pyg_param),
+    "CLUSTER": lambda pyg: pyg.datasets.GNNBenchmarkDataset(name="CLUSTER", **pyg_param),
     # TU datasets
     # Small molecules - TU
     "AIDS": lambda dgl: dgl.data.TUDataset("AIDS", **dgl_param),
@@ -106,6 +117,8 @@ def load(
     node_labels: list[list[float]] = None,
     edge_labels: list[list[float]] = None,
     dataset_name: str = None,
+    graph_count: int = None,
+    seed: int = 0,
 ) -> Dataset:
     """Load graphs from a dataset or a list of graphs.
 
@@ -128,6 +141,12 @@ def load(
     dataset_name : str, optional
         The name of the dataset. If None (default), the name of the dataset is
         used.
+    graph_count : int, optional
+        The number of graphs to subsample. If None (default), all graphs are
+        used. If the number of graphs in the dataset is smaller than
+        `graph_count`, all graphs are used.
+    seed : int, optional
+        The random seed to use for subsampling. Default is 0.
 
     Returns
     -------
@@ -142,6 +161,11 @@ def load(
 
     if dataset_name is not None:
         dataset.name = dataset_name
+    else:
+        dataset.name = name_or_graphs if isinstance(name_or_graphs, str) else None
+
+    if graph_count is not None and graph_count < len(dataset):
+        dataset = dataset.subsample(graph_count, seed)
 
     return dataset
 
@@ -193,10 +217,16 @@ def _load_dataset(
         ogb_dataset = DATASETS[name](ogb)
         return Dataset.from_dgl(ogb_dataset, labels, node_labels, edge_labels)
 
-    # Otherwise a DGL dataset
-    dgl = _import_dgl()
-    dgl_dataset = DATASETS[name](dgl)
-    return Dataset.from_dgl(dgl_dataset, labels, node_labels, edge_labels)
+    # Otherwise either a DGL or PyG dataset
+    try:
+        dgl = _import_dgl()
+        dgl_dataset = DATASETS[name](dgl)
+        return Dataset.from_dgl(dgl_dataset, labels, node_labels, edge_labels)
+
+    except AttributeError:
+        pyg = _import_pyg()
+        pyg_dataset = DATASETS[name](pyg)
+        return Dataset.from_pyg(pyg_dataset, labels, node_labels, edge_labels)
 
 
 def _import_dgl():
@@ -209,6 +239,17 @@ def _import_dgl():
             "Please install one of PyTorch, MXNet, or TensorFlow."
         )
     return dgl
+
+
+def _import_pyg():
+    """Import torch_geometric."""
+    try:
+        import torch_geometric
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError(
+            "PyTorch Geometric is required for PyG datasets."
+        )
+    return torch_geometric
 
 
 def _import_ogbg():
