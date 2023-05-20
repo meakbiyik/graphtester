@@ -181,6 +181,7 @@ def recommend(
     max_feature_count = min(max_feature_count, len(features_to_test))
     results = {}
     for state in states_to_check:
+        current_features_to_test = features_to_test.copy()
         previous_best_features, previous_best_result = [], None
         for feature_count in range(
             max_feature_count + 1  # we also consider the zero-feature case
@@ -188,7 +189,7 @@ def recommend(
             best_feature, best_result = _evaluate_features(
                 dataset,
                 metrics,
-                features_to_test,
+                current_features_to_test,
                 results,
                 state,
                 previous_best_features,
@@ -197,7 +198,7 @@ def recommend(
             )
             if best_feature is not None:
                 previous_best_features.append(best_feature)
-                features_to_test.remove(best_feature)
+                current_features_to_test.remove(best_feature)
             if (
                 all(
                     best_result.results[m.name][iterations] == m.best_value
