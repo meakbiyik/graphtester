@@ -4,6 +4,7 @@ from typing import Dict, List, Literal, Optional, Tuple
 
 import igraph as ig
 import pandas as pd
+import numpy as np
 
 from graphtester.io.dataset import Dataset
 from graphtester.label import label
@@ -217,6 +218,10 @@ def evaluate(
     additional_features: List[str] = None,
     metrics: List[str | _Metric] = None,
     iterations: int = 3,
+    subsample: bool = False,
+    subsample_count: int = 100,
+    subsample_size: int = 10,
+    seed: int = 0,
 ) -> EvaluationResult:
     """Evaluate a dataset.
 
@@ -252,6 +257,16 @@ def evaluate(
             - "upper_bound_accuracy_node": Upper bound accuracy (node labels)
     iterations : int, optional
         The number of iterations to run 1-WL for, by default 3
+    subsample : bool, optional
+        Whether to subsample the nodes for estimating the graph hashes, by default False.
+        If True, the nodes are subsampled from the graph with replacement to estimate
+        the graph hashes.
+    subsample_count : int, optional
+        The number of subsamples to take for estimating the graph hashes, by default 100
+    subsample_size : int, optional
+        The number of nodes to subsample in estimating the graph hashes, by default 10
+    seed : int, optional
+        The random seed to use for subsampling, by default 0
 
     Returns
     -------
@@ -273,7 +288,7 @@ def evaluate(
     estimate_edge_hashes = any(metric.type == "edge" for metric in metrics)
     estimate_node_hashes = estimate_edge_hashes or any(
         metric.type == "node" for metric in metrics
-    )
+    ) or subsample
     hashes, node_hashes = _estimate_hashes_at_k_iterations(
         graphs.copy(), iterations, estimate_node_hashes
     )
@@ -281,6 +296,23 @@ def evaluate(
     edge_hashes = None
     if estimate_edge_hashes:
         edge_hashes = _estimate_edge_hashes(graphs, node_hashes)
+
+    if subsample:
+        generator = np.random.default_rng(seed)
+        subsampled_hashes = {}
+        for iteration, iteration_hashes in node_hashes.items():
+            subsampled_hashes[iteration] = [None] * (len(graphs) * subsample_count)
+            for graph_idx, (graph, graph_node_hashes) in enumerate(zip(graphs, iteration_hashes)):
+                for subsample_idx in range(subsample_count):
+                    subsample_indices = generator.choice(graph.vcount(), size=subsample_size, replace=False)
+                    subsampled_node_hashes = [graph_node_hashes[i] for i in subsample_indices]
+                    hsh = ";".join(sorted(subsampled_node_hashes))
+                    subsampled_hashes[iteration][graph_idx * subsample_count + subsample_idx] = hsh
+        
+        hashes = subsampled_hashes
+        labels = [
+            label for label in labels for _ in range(subsample_count)
+        ]
 
     results = {}
     for metric in metrics:
