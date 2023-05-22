@@ -236,6 +236,7 @@ class Dataset:
         """
         from torch_geometric.utils import to_networkx
         from torch_geometric.data import Data
+        import torch
 
         if hasattr(pyg_dataset[0], "y"):
             with_node_labels = pyg_dataset[0].y.shape[0] == pyg_dataset[0].num_nodes
@@ -262,12 +263,23 @@ class Dataset:
             graph = to_networkx(data_obj, node_attrs=node_attributes, edge_attrs=edge_attributes)
             graphs.append(ig.Graph.from_networkx(graph))
             if with_graph_labels:
-                if data_obj.y.shape[0] > 1:
-                    raise ValueError("Multi-task classification not yet supported.")
+                if torch.numel(data_obj.y) > 1:
+                    # try to convert from one-hot encoding
+                    try:
+                        _labels.append(float(np.where(data_obj.y == 1)[0]))
+                    except ValueError:
+                        raise ValueError("Multi-task classification not yet supported.")
                 else:
                     _labels.append(float(data_obj.y))
             if with_node_labels:
-                _node_labels.append([float(lbl) for lbl in data_obj.x.tolist()])
+                if torch.numel(data_obj.x[0]) > 1:
+                    # try to convert from one-hot encoding
+                    try:
+                        _node_labels.append([float(np.where(lbl == 1)[0]) for lbl in data_obj.x])
+                    except ValueError:
+                        raise ValueError("Multi-task classification not yet supported.")
+                else:
+                    _node_labels.append([float(lbl) for lbl in data_obj.x])
 
         if labels is None and with_graph_labels:
             labels = list(_labels)
@@ -294,6 +306,8 @@ class Dataset:
         def simplify(val):
             if isinstance(val, np.ndarray):
                 return val.astype(float).round(2).tolist()
+            elif isinstance(val, list):
+                return [float(v) for v in val]
             elif isinstance(val, numbers.Number):
                 return float(val)
             else:
