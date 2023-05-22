@@ -19,7 +19,7 @@ FEATURES_TO_TEST = [
     "Burt's constraint",
     "Betweenness centrality",
 ]
-GRAPH_COUNT = 10000 # If the dataset has more graphs than this, it is subsampled
+GRAPH_COUNT = 5000 # If the dataset has more graphs than this, it is subsampled
 
 datasets_to_skip = ["GT", "GT-small", "ZINC_FULL"]
 datasets_to_evaluate = [dataset for dataset in DATASETS if dataset not in datasets_to_skip]
@@ -107,7 +107,7 @@ def analyze_dataset(dataset_name: str):
     with open(
         f"recommendation_{dataset_name}{'_regression' if is_regression else '_classification'}"
         f"{'_without_original_feats' if not WITH_ORIGINAL_FEATS else ''}"
-        f"{'_{GRAPH_COUNT}' if GRAPH_COUNT is not None else ''}.pickle",
+        f"{f'_{GRAPH_COUNT}' if GRAPH_COUNT is not None else ''}.pickle",
         "wb",
     ) as f:
         pickle.dump(recommendation, f)

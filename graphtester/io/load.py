@@ -153,25 +153,24 @@ def load(
     dataset : Dataset
     """
     if isinstance(name_or_graphs, str):
-        dataset = _load_dataset(name_or_graphs, labels, node_labels, edge_labels)
+        dataset = _load_dataset(name_or_graphs, labels, node_labels, edge_labels, graph_count, seed)
     elif isinstance(name_or_graphs, list):
         dataset = _load_graphs(name_or_graphs, labels, node_labels, edge_labels)
+        if graph_count is not None and graph_count < len(dataset):
+            dataset = dataset.subsample(graph_count, seed)
     else:
-        dataset = Dataset.from_dgl(name_or_graphs, labels, node_labels, edge_labels)
+        dataset = Dataset.from_dgl(name_or_graphs, labels, node_labels, edge_labels, graph_count, seed)
 
     if dataset_name is not None:
         dataset.name = dataset_name
     else:
         dataset.name = name_or_graphs if isinstance(name_or_graphs, str) else None
 
-    if graph_count is not None and graph_count < len(dataset):
-        dataset = dataset.subsample(graph_count, seed)
-
     return dataset
 
 
 def _load_dataset(
-    name: str, labels: List = None, node_labels: List = None, edge_labels: List = None
+    name: str, labels: List = None, node_labels: List = None, edge_labels: List = None, graph_count: int = None, seed: int = 0
 ) -> Dataset:
     """Load a dataset.
 
@@ -191,6 +190,12 @@ def _load_dataset(
         The edge labels of the graphs for link classification tasks. If None
         (default), the edge labels in the dataset are used, if available. If the
         dataset is already labeled, the edge labels override the edge labels.
+    graph_count : int, optional
+        The number of graphs to subsample. If None (default), all graphs are
+        used. If the number of graphs in the dataset is smaller than
+        `graph_count`, all graphs are used.
+    seed : int, optional
+        The random seed to use for subsampling. Default is 0.
 
     Returns
     -------
@@ -205,28 +210,28 @@ def _load_dataset(
     if name.startswith("ogbg"):
         ogb = _import_ogbg()
         ogb_dataset = DATASETS[name](ogb)
-        return Dataset.from_dgl(ogb_dataset, labels, node_labels, edge_labels)
+        return Dataset.from_dgl(ogb_dataset, labels, node_labels, edge_labels, graph_count, seed)
 
     if name.startswith("ogbn"):
         ogb = _import_ogbn()
         ogb_dataset = DATASETS[name](ogb)
-        return Dataset.from_dgl(ogb_dataset, labels, node_labels, edge_labels)
+        return Dataset.from_dgl(ogb_dataset, labels, node_labels, edge_labels, graph_count, seed)
 
     if name.startswith("ogbl"):
         ogb = _import_ogbl()
         ogb_dataset = DATASETS[name](ogb)
-        return Dataset.from_dgl(ogb_dataset, labels, node_labels, edge_labels)
+        return Dataset.from_dgl(ogb_dataset, labels, node_labels, edge_labels, graph_count, seed)
 
     # Otherwise either a DGL or PyG dataset
     try:
         dgl = _import_dgl()
         dgl_dataset = DATASETS[name](dgl)
-        return Dataset.from_dgl(dgl_dataset, labels, node_labels, edge_labels)
+        return Dataset.from_dgl(dgl_dataset, labels, node_labels, edge_labels, graph_count, seed)
 
     except AttributeError:
         pyg = _import_pyg()
         pyg_dataset = DATASETS[name](pyg)
-        return Dataset.from_pyg(pyg_dataset, labels, node_labels, edge_labels)
+        return Dataset.from_pyg(pyg_dataset, labels, node_labels, edge_labels, graph_count, seed)
 
 
 def _import_dgl():

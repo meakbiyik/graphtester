@@ -55,6 +55,8 @@ class Dataset:
         labels: List[float] = None,
         node_labels: List[List[float]] = None,
         edge_labels: List[List[float]] = None,
+        graph_count: int = None,
+        seed: int = 0,
     ) -> "Dataset":
         """Create a Dataset from a DGL dataset.
 
@@ -74,6 +76,12 @@ class Dataset:
             The labels of the edges. If None (default), the edge labels
             in the dataset are used, if available. If the dataset is already
             labeled, the edge labels override the edge labels in the dataset.
+        graph_count : int, optional
+            The number of graphs to subsample. If None (default), all graphs are
+            used. If the number of graphs in the dataset is smaller than
+            `graph_count`, all graphs are used.
+        seed : int, optional
+            The random seed to use for subsampling. Default is 0.
 
         Returns
         -------
@@ -135,7 +143,15 @@ class Dataset:
                 else "etype"
             )
 
-        graph_count = len(dgl_dataset)
+        dataset_size = len(dgl_dataset)
+        if graph_count is not None and graph_count < dataset_size:
+            generator = np.random.default_rng(seed)
+            indices = generator.choice(
+                dataset_size, size=graph_count, replace=False
+            )
+        else:
+            indices = range(dataset_size)
+
         gget = (
             (lambda i: dgl_dataset[i][0])
             if with_graph_labels
@@ -164,7 +180,7 @@ class Dataset:
                     nlget(i),
                     elget(i),
                 )
-                for i in range(graph_count)
+                for i in indices
             ]
         )
         if labels is None and with_graph_labels:
@@ -191,6 +207,8 @@ class Dataset:
         labels: List[float] = None,
         node_labels: List[List[float]] = None,
         edge_labels: List[List[float]] = None,
+        graph_count: int = None,
+        seed: int = 0,
     ) -> "Dataset":
         """Load a Dataset from a Pytorch Geometric dataset.
 
@@ -204,6 +222,12 @@ class Dataset:
             The node labels.
         edge_labels : List[List[float]], optional
             The edge labels.
+        graph_count : int, optional
+            The number of graphs to subsample. If None (default), all graphs are
+            used. If the number of graphs in the dataset is smaller than
+            `graph_count`, all graphs are used.
+        seed : int, optional
+            The random seed to use for subsampling. Default is 0.
 
         Returns
         -------
@@ -221,8 +245,17 @@ class Dataset:
         with_edge_labels = hasattr(pyg_dataset, "get_edge_split")
         # TODO: edge labels
 
+        dataset_size = len(pyg_dataset)
+        if graph_count is not None and graph_count < dataset_size:
+            generator = np.random.default_rng(seed)
+            indices = generator.choice(
+                dataset_size, size=graph_count, replace=False
+            )
+        else:
+            indices = range(dataset_size)
+        
         graphs, _labels, _node_labels = [], [], []
-        for i in range(len(pyg_dataset)):
+        for i in indices:
             data_obj: Data = pyg_dataset[i]
             node_attributes = data_obj.node_attrs()
             edge_attributes = [a for a in data_obj.edge_attrs() if a != "edge_index"]
