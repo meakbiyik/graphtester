@@ -49,14 +49,14 @@ def select_metric(dataset: Dataset) -> _Metric:
 
 def analyze_dataset(dataset_name: str):
     """Analyze a dataset."""
-    print(f"Dataset: {dataset_name}")
+    print(f"Dataset: {dataset_name}", flush=True)
 
     # Load the dataset
     dataset = gt.load(dataset_name, graph_count=GRAPH_COUNT)
-    print(dataset)
+    print(dataset, flush=True)
 
     metrics = [select_metric(dataset)]
-    print(metrics[0].description)
+    print(metrics[0].description, flush=True)
 
     has_node_features = len(dataset.graphs[0].vs.attributes()) > 0
     has_edge_features = len(dataset.graphs[0].es.attributes()) > 0
@@ -91,7 +91,7 @@ def analyze_dataset(dataset_name: str):
             ) as f:
                 pickle.dump(evaluation, f)
 
-            print(evaluation)
+            print(evaluation, flush=True)
 
     # Recommend features to add to the dataset
     recommendation = gt.recommend(
@@ -112,7 +112,7 @@ def analyze_dataset(dataset_name: str):
     ) as f:
         pickle.dump(recommendation, f)
 
-    print(recommendation)
+    print(recommendation, flush=True)
 
 
 def analyze_dataset_with_skip(dataset_name: str):
@@ -120,7 +120,7 @@ def analyze_dataset_with_skip(dataset_name: str):
     try:
         analyze_dataset(dataset_name)
     except Exception as e:
-        print(f"Dataset: {dataset_name}, Error: {e}")
+        print(f"Dataset: {dataset_name}, Error: {e}", flush=True)
 
 
 if __name__ == "__main__":
