@@ -93,6 +93,22 @@ def analyze_dataset(dataset_name: str):
 
             print(evaluation, flush=True)
 
+    recommender_filename = (
+        f"recommendation_{dataset_name}{'_regression' if is_regression else '_classification'}"
+        f"{'_without_original_feats' if not WITH_ORIGINAL_FEATS else ''}"
+        f"{f'_{GRAPH_COUNT}' if GRAPH_COUNT is not None else ''}.pickle"
+    )
+
+    # Check if the recommendation already exists, if so, skip
+    try:
+        with open(recommender_filename, "rb") as f:
+            recommendation = pickle.load(f)
+        print(f"Recommendation already exists for {dataset_name}", flush=True)
+        print(recommendation, flush=True)
+        return
+    except FileNotFoundError:
+        pass
+
     # Recommend features to add to the dataset
     recommendation = gt.recommend(
         dataset,
@@ -104,10 +120,7 @@ def analyze_dataset(dataset_name: str):
     )
 
     # pickle the recommendation
-    with open(
-        f"recommendation_{dataset_name}{'_regression' if is_regression else '_classification'}"
-        f"{'_without_original_feats' if not WITH_ORIGINAL_FEATS else ''}"
-        f"{f'_{GRAPH_COUNT}' if GRAPH_COUNT is not None else ''}.pickle",
+    with open(recommender_filename,
         "wb",
     ) as f:
         pickle.dump(recommendation, f)
