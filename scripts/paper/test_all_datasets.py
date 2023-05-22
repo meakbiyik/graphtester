@@ -19,11 +19,15 @@ FEATURES_TO_TEST = [
     "Burt's constraint",
     "Betweenness centrality",
 ]
-GRAPH_COUNT = 10000 # If the dataset has more graphs than this, it is subsampled
-ITERATIONS = 1
+GRAPH_COUNT = 5000 # If the dataset has more graphs than this, it is subsampled
+ITERATIONS = 3
+SUBSAMPLE_NODES = True # This is for node hash subsampling, not graph subsampling
 
 datasets_to_skip = ["GT", "GT-small", "ZINC_FULL"]
-datasets_to_evaluate = [dataset for dataset in DATASETS if dataset not in datasets_to_skip]
+if SUBSAMPLE_NODES:
+    datasets_to_evaluate = ["ZINC", "MNIST", "CIFAR10"]
+else:
+    datasets_to_evaluate = [dataset for dataset in DATASETS if dataset not in datasets_to_skip]
 
 def select_metric(dataset: Dataset) -> _Metric:
     """Select the metric to use for a dataset."""
@@ -83,6 +87,7 @@ def analyze_dataset(dataset_name: str):
                 ignore_edge_features=state
                 in ["without_features", "with_node_features"],
                 iterations=ITERATIONS,
+                subsample=SUBSAMPLE_NODES,
             )
             # pickle the evaluation
             with open(
@@ -96,6 +101,7 @@ def analyze_dataset(dataset_name: str):
         f"recommendation_{dataset_name}{'_regression' if is_regression else '_classification'}"
         f"{'_without_original_feats' if not WITH_ORIGINAL_FEATS else ''}"
         f"_{ITERATIONS}_iter"
+        f"{'_subsampled' if SUBSAMPLE_NODES else ''}"
         f"{f'_{GRAPH_COUNT}' if GRAPH_COUNT is not None else ''}.pickle"
     )
 
@@ -117,6 +123,7 @@ def analyze_dataset(dataset_name: str):
         features_to_test=FEATURES_TO_TEST,
         ignore_original_features=not WITH_ORIGINAL_FEATS,
         iterations=ITERATIONS,
+        subsample=SUBSAMPLE_NODES,
     )
 
     # pickle the recommendation
