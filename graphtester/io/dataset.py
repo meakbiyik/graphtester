@@ -148,7 +148,7 @@ class Dataset:
             generator = np.random.default_rng(seed)
             indices = generator.choice(
                 dataset_size, size=graph_count, replace=False
-            )
+            ).tolist()
         else:
             indices = range(dataset_size)
 
@@ -251,7 +251,7 @@ class Dataset:
             generator = np.random.default_rng(seed)
             indices = generator.choice(
                 dataset_size, size=graph_count, replace=False
-            )
+            ).tolist()
         else:
             indices = range(dataset_size)
         
@@ -391,7 +391,7 @@ class Dataset:
             The subsampled dataset.
         """
         generator = np.random.default_rng(seed)
-        indices = generator.choice(len(self), n, replace=False)
+        indices = generator.choice(len(self), n, replace=False).tolist()
         return Dataset(
             [self.graphs[i] for i in indices],
             [self.labels[i] for i in indices] if self.labels is not None else None,
