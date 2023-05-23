@@ -114,10 +114,6 @@ def recommend(
     ignore_original_features=False,
     fast=True,
     iterations=1,
-    subsample=False,
-    subsample_count=100,
-    subsample_size=10,
-    seed=0,
 ) -> RecommendationResult:
     """Recommend additional features (methods) to add to a dataset.
 
@@ -150,16 +146,6 @@ def recommend(
         by default True. Ignored if features_to_test is not None.
     iterations : int, optional
         The number of iterations to run the comparison for, by default 1
-    subsample : bool, optional
-        Whether to subsample the nodes for estimating the graph hashes, by default False.
-        If True, the nodes are subsampled from the graph with replacement to estimate
-        the graph hashes.
-    subsample_count : int, optional
-        The number of subsamples to take for estimating the graph hashes, by default 100
-    subsample_size : int, optional
-        The number of nodes to subsample in estimating the graph hashes, by default 10
-    seed : int, optional
-        The random seed to use for subsampling, by default 0
 
     Returns
     -------
@@ -209,10 +195,6 @@ def recommend(
                 previous_best_features,
                 feature_count,
                 iterations,
-                subsample,
-                subsample_count,
-                subsample_size,
-                seed,
             )
             if best_feature is not None:
                 previous_best_features.append(best_feature)
@@ -241,10 +223,6 @@ def _evaluate_features(
     previous_best_features,
     feature_count,
     iterations,
-    subsample,
-    subsample_count,
-    subsample_size,
-    seed,
 ):
     best_feature, best_result = None, None
     if feature_count == 0:
@@ -257,10 +235,6 @@ def _evaluate_features(
             or state == "With edge features",
             ignore_edge_features=state == "Without node or edge features"
             or state == "With node features",
-            subsample=subsample,
-            subsample_count=subsample_count,
-            subsample_size=subsample_size,
-            seed=seed,
         )
         results[(state, tuple())] = result
         best_result = result
@@ -277,10 +251,6 @@ def _evaluate_features(
                 or state == "With edge features",
                 ignore_edge_features=state == "Without node or edge features"
                 or state == "With node features",
-                subsample=subsample,
-                subsample_count=subsample_count,
-                subsample_size=subsample_size,
-                seed=seed,
             )
             results[(state, features)] = result
             if _result_is_better(result, best_result, metrics, iterations):

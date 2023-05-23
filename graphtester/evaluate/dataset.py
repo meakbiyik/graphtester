@@ -19,7 +19,7 @@ class _Metric:
         name: str,
         description: str,
         higher_is_better: bool,
-        type: Literal["graph", "node", "edge"],
+        type: Literal["graph", "graph_node", "node", "edge"],
         evaluator: callable,
         best_value: Optional[float] = None,
     ):
@@ -49,17 +49,31 @@ class _Metric:
     ):
         if self.type == "graph":
             return self._evaluator(graphs, hashes, labels)
+        elif self.type == "graph_node":
+            # Flatten the node hashes but use graph labels with it
+            # by repeating the graph labels for each node
+            # this is still graph-level evaluation
+            flat_node_hashes = {
+                graph_index: [hsh for hshs in hashes_list for hsh in hshs]
+                for graph_index, hashes_list in node_hashes.items()
+            }
+            repeated_graph_labels = [
+                graph_label
+                for graph, graph_label in zip(graphs, labels)
+                for _ in range(graph.vcount())
+            ]
+            return self._evaluator(graphs, flat_node_hashes, repeated_graph_labels)
         elif self.type == "node":
             flat_node_hashes = {
-                graph_index: [hsh for hshs in hshs for hsh in hshs]
-                for graph_index, hshs in node_hashes.items()
+                graph_index: [hsh for hshs in hashes_list for hsh in hshs]
+                for graph_index, hashes_list in node_hashes.items()
             }
             flat_node_labels = [lbl for lbls in node_labels for lbl in lbls]
             return self._evaluator(graphs, flat_node_hashes, flat_node_labels)
         elif self.type == "edge":
             flat_edge_hashes = {
-                graph_index: [hsh for hshs in hshs for hsh in hshs]
-                for graph_index, hshs in edge_hashes.items()
+                graph_index: [hsh for hshs in hashes_list for hsh in hshs]
+                for graph_index, hashes_list in edge_hashes.items()
             }
             flat_edge_labels = [lbl for lbls in edge_labels for lbl in lbls]
             return self._evaluator(graphs, flat_edge_hashes, flat_edge_labels)
@@ -99,9 +113,17 @@ DEFAULT_METRICS = {
     ),
     "upper_bound_accuracy": _Metric(
         "upper_bound_accuracy",
-        "Upper Bound Accuracy (graph)",
+        "Upper Bound Accuracy",
         True,
         "graph",
+        _estimate_upper_bound_accuracy,
+        1.0,
+    ),
+    "upper_bound_accuracy_graph_node": _Metric(
+        "upper_bound_accuracy_graph_node",
+        "Upper Bound Accuracy (Graph - Node)",
+        True,
+        "graph_node",
         _estimate_upper_bound_accuracy,
         1.0,
     ),
@@ -124,6 +146,14 @@ DEFAULT_METRICS = {
     "lower_bound_mse": _Metric(
         "lower_bound_mse", "Lower Bound MSE", False, "graph", _estimate_mse, 0.0
     ),
+    "lower_bound_mse_graph_node": _Metric(
+        "lower_bound_mse_graph_node",
+        "Lower Bound MSE (Graph - Node)",
+        False,
+        "graph_node",
+        _estimate_mse,
+        0.0,
+    ),
     "lower_bound_mse_node": _Metric(
         "lower_bound_mse_node",
         "Lower Bound MSE (Node)",
@@ -142,9 +172,17 @@ DEFAULT_METRICS = {
     ),
     "upper_bound_f1_micro": _Metric(
         "upper_bound_f1_micro",
-        "Upper Bound F1-micro (graph)",
+        "Upper Bound F1-micro",
         True,
         "graph",
+        _estimate_f1,
+        1.0,
+    ),
+    "upper_bound_f1_micro_graph_node": _Metric(
+        "upper_bound_f1_micro_graph_node",
+        "Upper Bound F1-micro (Graph - Node)",
+        True,
+        "graph_node",
         _estimate_f1,
         1.0,
     ),
@@ -218,10 +256,6 @@ def evaluate(
     additional_features: List[str] = None,
     metrics: List[str | _Metric] = None,
     iterations: int = 3,
-    subsample: bool = False,
-    subsample_count: int = 100,
-    subsample_size: int = 10,
-    seed: int = 0,
 ) -> EvaluationResult:
     """Evaluate a dataset.
 
@@ -257,16 +291,6 @@ def evaluate(
             - "upper_bound_accuracy_node": Upper bound accuracy (node labels)
     iterations : int, optional
         The number of iterations to run 1-WL for, by default 3
-    subsample : bool, optional
-        Whether to subsample the nodes for estimating the graph hashes, by default False.
-        If True, the nodes are subsampled from the graph with replacement to estimate
-        the graph hashes.
-    subsample_count : int, optional
-        The number of subsamples to take for estimating the graph hashes, by default 100
-    subsample_size : int, optional
-        The number of nodes to subsample in estimating the graph hashes, by default 10
-    seed : int, optional
-        The random seed to use for subsampling, by default 0
 
     Returns
     -------
@@ -287,8 +311,8 @@ def evaluate(
 
     estimate_edge_hashes = any(metric.type == "edge" for metric in metrics)
     estimate_node_hashes = estimate_edge_hashes or any(
-        metric.type == "node" for metric in metrics
-    ) or subsample
+        metric.type == "node" or metric.type == "graph_node" for metric in metrics
+    )
     hashes, node_hashes = _estimate_hashes_at_k_iterations(
         graphs.copy(), iterations, estimate_node_hashes
     )
@@ -296,23 +320,6 @@ def evaluate(
     edge_hashes = None
     if estimate_edge_hashes:
         edge_hashes = _estimate_edge_hashes(graphs, node_hashes)
-
-    if subsample:
-        generator = np.random.default_rng(seed)
-        subsampled_hashes = {}
-        for iteration, iteration_hashes in node_hashes.items():
-            subsampled_hashes[iteration] = [None] * (len(graphs) * subsample_count)
-            for graph_idx, (graph, graph_node_hashes) in enumerate(zip(graphs, iteration_hashes)):
-                for subsample_idx in range(subsample_count):
-                    subsample_indices = generator.choice(graph.vcount(), size=subsample_size, replace=False)
-                    subsampled_node_hashes = [graph_node_hashes[i] for i in subsample_indices]
-                    hsh = ";".join(sorted(subsampled_node_hashes))
-                    subsampled_hashes[iteration][graph_idx * subsample_count + subsample_idx] = hsh
-        
-        hashes = subsampled_hashes
-        labels = [
-            label for label in labels for _ in range(subsample_count)
-        ]
 
     results = {}
     for metric in metrics:
