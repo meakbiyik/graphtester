@@ -601,6 +601,12 @@ VERTEX_LABELING_METHODS = {
     ],
     "Burt's constraint": lambda g: [str(round(h, 6)) for h in g.constraint()],
     "Betweenness centrality": lambda g: [str(round(h, 6)) for h in g.betweenness()],
+    "Laplacian positional encoding (dim=1)": lambda g: _laplacian_positional_encoding(
+        g, dim=1
+    ),
+    "Laplacian positional encoding (dim=2)": lambda g: _laplacian_positional_encoding(
+        g, dim=2
+    ),
     "Laplacian positional encoding (dim=4)": lambda g: _laplacian_positional_encoding(
         g, dim=4
     ),
@@ -610,14 +616,26 @@ VERTEX_LABELING_METHODS = {
     "Laplacian positional encoding (dim=16)": lambda g: _laplacian_positional_encoding(
         g, dim=16
     ),
+    "Laplacian positional encoding (dim=32)": lambda g: _laplacian_positional_encoding(
+        g, dim=32
+    ),
+    "Random walk structural encoding (steps=1)": lambda g: _random_walk_structural_encoding(
+        g, steps=1
+    ),
+    "Random walk structural encoding (steps=2)": lambda g: _random_walk_structural_encoding(
+        g, steps=2
+    ),
     "Random walk structural encoding (steps=4)": lambda g: _random_walk_structural_encoding(
         g, steps=4
     ),
     "Random walk structural encoding (steps=8)": lambda g: _random_walk_structural_encoding(
         g, steps=8
     ),
-    "Random walk structural encoding (steps=20)": lambda g: _random_walk_structural_encoding(
-        g, steps=20
+    "Random walk structural encoding (steps=16)": lambda g: _random_walk_structural_encoding(
+        g, steps=16
+    ),
+    "Random walk structural encoding (steps=32)": lambda g: _random_walk_structural_encoding(
+        g, steps=32
     ),
     "Marked WL hash vertex label": _wl_hash_vertex_label,
     "3-cycle count of vertices": lambda g: _count_substructure_vertices(
