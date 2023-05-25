@@ -382,7 +382,7 @@ def _laplacian_positional_encoding(graph: ig.Graph, dim: int) -> List[str]:
 
     We follow the implementation in GraphGPS, which does not skip the
     smallest eigenvalue.
-    
+
     Parameters
     ----------
     graph : ig.Graph
@@ -390,7 +390,7 @@ def _laplacian_positional_encoding(graph: ig.Graph, dim: int) -> List[str]:
     dim : int
         The dimension of the encoding. If smaller than the number of nodes,
         the dimension is set to the number of nodes.
-        
+
     Returns
     -------
     List[str]
@@ -406,7 +406,9 @@ def _laplacian_positional_encoding(graph: ig.Graph, dim: int) -> List[str]:
     eigenvectors = np.real(eigenvectors[:, idx])
 
     return [
-        ",".join([str(eigenvector[node_idx]) for eigenvector in eigenvectors.T])
+        ",".join(
+            [str(round(eigenvector[node_idx]), 6) for eigenvector in eigenvectors.T]
+        )
         for node_idx in range(graph.vcount())
     ]
 
@@ -445,7 +447,12 @@ def _random_walk_structural_encoding(graph: ig.Graph, num_steps: int) -> List[st
         landing_probabilities = landing_probabilities @ transition_matrix
 
     return [
-        ",".join([str(node_probability[node_idx]) for node_probability in node_probabilities])
+        ",".join(
+            [
+                str(round(node_probability[node_idx], 6))
+                for node_probability in node_probabilities
+            ]
+        )
         for node_idx in range(graph.vcount())
     ]
 
@@ -594,24 +601,24 @@ VERTEX_LABELING_METHODS = {
     ],
     "Burt's constraint": lambda g: [str(round(h, 6)) for h in g.constraint()],
     "Betweenness centrality": lambda g: [str(round(h, 6)) for h in g.betweenness()],
-    "Laplacian positional encoding (dim=4)": lambda g: [
-        str(round(h, 6)) for h in _laplacian_positional_encoding(g, dim=4)
-    ],
-    "Laplacian positional encoding (dim=8)": lambda g: [
-        str(round(h, 6)) for h in _laplacian_positional_encoding(g, dim=8)
-    ],
-    "Laplacian positional encoding (dim=16)": lambda g: [
-        str(round(h, 6)) for h in _laplacian_positional_encoding(g, dim=16)
-    ],
-    "Random walk structural encoding (steps=4)": lambda g: [
-        str(round(h, 6)) for h in _random_walk_structural_encoding(g, steps=4)
-    ],
-    "Random walk structural encoding (steps=8)": lambda g: [
-        str(round(h, 6)) for h in _random_walk_structural_encoding(g, steps=8)
-    ],
-    "Random walk structural encoding (steps=16)": lambda g: [
-        str(round(h, 6)) for h in _random_walk_structural_encoding(g, steps=16)
-    ],
+    "Laplacian positional encoding (dim=4)": lambda g: _laplacian_positional_encoding(
+        g, dim=4
+    ),
+    "Laplacian positional encoding (dim=8)": lambda g: _laplacian_positional_encoding(
+        g, dim=8
+    ),
+    "Laplacian positional encoding (dim=16)": lambda g: _laplacian_positional_encoding(
+        g, dim=16
+    ),
+    "Random walk structural encoding (steps=4)": lambda g: _random_walk_structural_encoding(
+        g, steps=4
+    ),
+    "Random walk structural encoding (steps=8)": lambda g: _random_walk_structural_encoding(
+        g, steps=8
+    ),
+    "Random walk structural encoding (steps=20)": lambda g: _random_walk_structural_encoding(
+        g, steps=20
+    ),
     "Marked WL hash vertex label": _wl_hash_vertex_label,
     "3-cycle count of vertices": lambda g: _count_substructure_vertices(
         g, SUBSTRUCTURES["3_cycle"], SUBSTRUCTURE_VERTEX_ORBITS["3_cycle"]
