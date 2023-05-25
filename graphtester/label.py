@@ -407,7 +407,7 @@ def _laplacian_positional_encoding(graph: ig.Graph, dim: int) -> List[str]:
 
     return [
         ",".join(
-            [str(round(eigenvector[node_idx]), 6) for eigenvector in eigenvectors.T]
+            [str(round(eigenvector[node_idx], 6)) for eigenvector in eigenvectors.T]
         )
         for node_idx in range(graph.vcount())
     ]
