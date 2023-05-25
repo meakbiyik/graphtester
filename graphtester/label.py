@@ -413,17 +413,17 @@ def _laplacian_positional_encoding(graph: ig.Graph, dim: int) -> List[str]:
     ]
 
 
-def _random_walk_structural_encoding(graph: ig.Graph, num_steps: int) -> List[str]:
+def _random_walk_structural_encoding(graph: ig.Graph, steps: int) -> List[str]:
     """Encode the graph using the random walk structural encoding.
 
     This method simply computes the random walk landing probabilities
-    for each node, at steps 1 to `num_steps`.
+    for each node, at steps 1 to `steps`.
 
     Parameters
     ----------
     graph : ig.Graph
         The graph to encode.
-    num_steps : int
+    steps : int
         The number of random walk steps.
 
     Returns
@@ -442,7 +442,7 @@ def _random_walk_structural_encoding(graph: ig.Graph, num_steps: int) -> List[st
 
     landing_probabilities = transition_matrix.copy()
     node_probabilities = []
-    for _ in range(1, num_steps + 1):
+    for _ in range(1, steps + 1):
         node_probabilities.append(landing_probabilities.diagonal())
         landing_probabilities = landing_probabilities @ transition_matrix
 
