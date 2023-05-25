@@ -3,6 +3,7 @@ from collections import Counter, defaultdict
 from typing import List
 
 import igraph as ig
+import numpy as np
 
 from graphtester.test import (
     _init_node_labels,
@@ -376,6 +377,79 @@ def _determine_edge_orbits(substructure: ig.Graph) -> List[str]:
     return [orbit_hashmap[orbit] for orbit in orbits]
 
 
+def _laplacian_positional_encoding(graph: ig.Graph, dim: int) -> List[str]:
+    """Encode the graph using the Laplacian positional encoding.
+
+    We follow the implementation in GraphGPS, which does not skip the
+    smallest eigenvalue.
+    
+    Parameters
+    ----------
+    graph : ig.Graph
+        The graph to encode.
+    dim : int
+        The dimension of the encoding. If smaller than the number of nodes,
+        the dimension is set to the number of nodes.
+        
+    Returns
+    -------
+    List[str]
+        The labels.
+    """
+    if dim < graph.vcount():
+        dim = graph.vcount()
+
+    laplacian = graph.laplacian()
+    eigenvalues, eigenvectors = np.linalg.eigh(laplacian)
+
+    idx = eigenvalues.argsort()[:dim]
+    eigenvectors = np.real(eigenvectors[:, idx])
+
+    return [
+        ",".join([str(eigenvector[node_idx]) for eigenvector in eigenvectors.T])
+        for node_idx in range(graph.vcount())
+    ]
+
+
+def _random_walk_structural_encoding(graph: ig.Graph, num_steps: int) -> List[str]:
+    """Encode the graph using the random walk structural encoding.
+
+    This method simply computes the random walk landing probabilities
+    for each node, at steps 1 to `num_steps`.
+
+    Parameters
+    ----------
+    graph : ig.Graph
+        The graph to encode.
+    num_steps : int
+        The number of random walk steps.
+
+    Returns
+    -------
+    List[str]
+        The labels.
+    """
+    adjacency_matrix = graph.get_adjacency()
+    adjacency_matrix = np.array(adjacency_matrix.data)
+    adjacency_matrix = adjacency_matrix.reshape(
+        graph.vcount(), graph.vcount(), order="F"
+    )
+
+    diagonal_degree_matrix = np.diag(np.sum(adjacency_matrix, axis=1))
+    transition_matrix = np.linalg.pinv(diagonal_degree_matrix) @ adjacency_matrix
+
+    landing_probabilities = transition_matrix.copy()
+    node_probabilities = []
+    for _ in range(1, num_steps + 1):
+        node_probabilities.append(landing_probabilities.diagonal())
+        landing_probabilities = landing_probabilities @ transition_matrix
+
+    return [
+        ",".join([str(node_probability[node_idx]) for node_probability in node_probabilities])
+        for node_idx in range(graph.vcount())
+    ]
+
+
 def _wl_hash_vertex_label(graph: ig.Graph) -> List[str]:
     """Label vertices by the 1-WL hash of the graph, after marking each.
 
@@ -520,6 +594,24 @@ VERTEX_LABELING_METHODS = {
     ],
     "Burt's constraint": lambda g: [str(round(h, 6)) for h in g.constraint()],
     "Betweenness centrality": lambda g: [str(round(h, 6)) for h in g.betweenness()],
+    "Laplacian positional encoding (dim=4)": lambda g: [
+        str(round(h, 6)) for h in _laplacian_positional_encoding(g, dim=4)
+    ],
+    "Laplacian positional encoding (dim=8)": lambda g: [
+        str(round(h, 6)) for h in _laplacian_positional_encoding(g, dim=8)
+    ],
+    "Laplacian positional encoding (dim=16)": lambda g: [
+        str(round(h, 6)) for h in _laplacian_positional_encoding(g, dim=16)
+    ],
+    "Random walk structural encoding (steps=4)": lambda g: [
+        str(round(h, 6)) for h in _random_walk_structural_encoding(g, steps=4)
+    ],
+    "Random walk structural encoding (steps=8)": lambda g: [
+        str(round(h, 6)) for h in _random_walk_structural_encoding(g, steps=8)
+    ],
+    "Random walk structural encoding (steps=16)": lambda g: [
+        str(round(h, 6)) for h in _random_walk_structural_encoding(g, steps=16)
+    ],
     "Marked WL hash vertex label": _wl_hash_vertex_label,
     "3-cycle count of vertices": lambda g: _count_substructure_vertices(
         g, SUBSTRUCTURES["3_cycle"], SUBSTRUCTURE_VERTEX_ORBITS["3_cycle"]
