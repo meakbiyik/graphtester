@@ -1,6 +1,20 @@
 # graphtester
 
-## Contribution
+## Installation
+
+Simply run
+
+```bash
+pip install git+https://github.com/meakbiyik/graphtester.git
+```
+
+## Reproducing the results in the paper
+
+1. Install the package
+2. Run `sbatch scripts/paper/test_all_datasets.sh` to run all experiments on the datasets. Note that this scripts requires 10 cores and susntabtial amount of memory. You can change the number of cores by changing the `--cpus-per-task` argument in the script.
+3. Recommendation results can be gathered by adjusting the parameters in `scripts/paper/test_all_datasets.py` script for the desired task and running the bash script again.
+
+## Development
 
 1. Install [`poetry`](https://python-poetry.org/docs/#installation)
 2. Run `poetry install` to install dependencies

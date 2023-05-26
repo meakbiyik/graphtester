@@ -19,9 +19,9 @@ FEATURES_TO_TEST = [
     "Burt's constraint",
     "Betweenness centrality",
 ]
-GRAPH_COUNT = 5000 # If the dataset has more graphs than this, it is subsampled
+GRAPH_COUNT = 10000 # If the dataset has more graphs than this, it is subsampled
 ITERATIONS = 3
-USE_NODE_HASHES_FOR_GRAPH = True
+USE_NODE_HASHES_FOR_GRAPH = False
 
 datasets_to_skip = ["GT", "GT-small", "ZINC_FULL"]
 if USE_NODE_HASHES_FOR_GRAPH:
