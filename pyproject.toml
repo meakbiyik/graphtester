@@ -2,7 +2,7 @@
 name = "graphtester"
 version = "0.1.0"
 description = "WL-testing labeling/linking methods with a wide array of graph classes"
-authors = ["M. Eren Akbiyik <erenakbiyik@gmail.com>"]
+authors = ["Graphtester authors"]
 license = "MIT"
 packages = [
     {include = "graphtester"}
