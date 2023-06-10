@@ -112,7 +112,7 @@ DATASETS = {
 
 
 def load(
-    name_or_graphs: "str | list | dgl.data.DGLDataset",  # type: ignore # noqa: F821
+    name_or_graphs: "str | list | dgl.data.DGLDataset | torch_geometric.data.Dataset",  # type: ignore # noqa: F821
     labels: list[float] = None,
     node_labels: list[list[float]] = None,
     edge_labels: list[list[float]] = None,
@@ -124,8 +124,9 @@ def load(
 
     Parameters
     ----------
-    name_or_graphs : str or List[Union[nx.Graph, ig.Graph, dgl.data.DGLDataset]]
-        The name of the dataset to load, or a list of graphs.
+    name_or_graphs : str or List[Union[nx.Graph, ig.Graph, dgl.data.DGLDataset, torch_geometric.data.Dataset]]
+        The name of the dataset to load, or a list of graphs, or a dataset
+        object from DGL or PyTorch Geometric.
     labels : List[float], optional
         The labels of the graphs for classification tasks. If None (default),
         the graphs are assumed to be unlabeled. Needs to be the same length as
@@ -158,8 +159,18 @@ def load(
         dataset = _load_graphs(name_or_graphs, labels, node_labels, edge_labels)
         if graph_count is not None and graph_count < len(dataset):
             dataset = dataset.subsample(graph_count, seed)
-    else:
+    elif any(
+        base.__name__ == "DGLBuiltinDataset" or base.__name__ == "DGLDataset"
+        for base in type(name_or_graphs).__bases__
+    ):
         dataset = Dataset.from_dgl(name_or_graphs, labels, node_labels, edge_labels, graph_count, seed)
+    elif any(
+        base.__name__ == "InMemoryDataset" or base.__name__ == "Dataset"
+        for base in type(name_or_graphs).__bases__
+    ):
+        dataset = Dataset.from_pyg(name_or_graphs, labels, node_labels, edge_labels, graph_count, seed)
+    else:
+        raise TypeError(f"Unsupported type {type(name_or_graphs)}")
 
     if dataset_name is not None:
         dataset.name = dataset_name
