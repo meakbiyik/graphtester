@@ -369,7 +369,7 @@ def _k_weisfeiler_lehman_step(
                 )
                 for node in range(G.vcount())
             ]
-            new_label = ":".join(sorted(neighborhood_label_list + [tuple_label]))
+            new_label = ":".join(sorted(neighborhood_label_list) + [tuple_label])
             new_labels.append(new_label)
 
     else:
@@ -385,7 +385,7 @@ def _k_weisfeiler_lehman_step(
                 )
                 for i in range(k)
             ]
-            new_label = ":".join(sorted(neighborhood_label_list + [tuple_label]))
+            new_label = ":".join(sorted(neighborhood_label_list) + [tuple_label])
             new_labels.append(new_label)
 
     return new_labels
