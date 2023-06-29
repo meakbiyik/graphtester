@@ -1,6 +1,6 @@
 """Use WL to test the graph isomorphism."""
 import itertools
-from typing import List
+from typing import List, Union
 
 import igraph as ig
 
@@ -8,8 +8,8 @@ import igraph as ig
 def weisfeiler_lehman_test(
     G1: ig.Graph,
     G2: ig.Graph,
-    edge_attr: str | List[str] = None,
-    node_attr: str | List[str] = None,
+    edge_attr: Union[str, List[str]] = None,
+    node_attr: Union[str, List[str]] = None,
     iterations: int = None,
 ) -> bool:
     """Apply 1-Weisfeiler Lehman (1-WL) graph isomorphism test.
@@ -66,8 +66,8 @@ def k_weisfeiler_lehman_test(
     G1: ig.Graph,
     G2: ig.Graph,
     k: int,
-    edge_attr: str | List[str] = None,
-    node_attr: str | List[str] = None,
+    edge_attr: Union[str, List[str]] = None,
+    node_attr: Union[str, List[str]] = None,
     iterations: int = None,
     folklore: bool = False,
 ):
@@ -137,8 +137,8 @@ def k_weisfeiler_lehman_test(
 
 def weisfeiler_lehman_hash(
     G: ig.Graph,
-    edge_attr: str | List[str] = None,
-    node_attr: str | List[str] = None,
+    edge_attr: Union[str, List[str]] = None,
+    node_attr: Union[str, List[str]] = None,
     iterations: int = None,
     return_graph: bool = False,
     return_hash: bool = True,
@@ -215,8 +215,8 @@ def weisfeiler_lehman_hash(
 def _init_k_tuple_labels(
     G: ig.Graph,
     k: int,
-    edge_attr: str | List[str] = None,
-    node_attr: str | List[str] = None,
+    edge_attr: Union[str, List[str]] = None,
+    node_attr: Union[str, List[str]] = None,
 ) -> List[str]:
     """Initialize the k-tuple labels.
 
@@ -300,7 +300,7 @@ def _init_k_tuple_labels(
 
 
 def _weisfeiler_lehman_step(
-    G: ig.Graph, node_labels: List[str], edge_attr: str | List[str] = None
+    G: ig.Graph, node_labels: List[str], edge_attr: Union[str, List[str]] = None
 ):
     """Apply neighborhood aggregation to each node in the graph.
 
@@ -392,7 +392,7 @@ def _k_weisfeiler_lehman_step(
 
 
 def _init_node_labels(
-    G: ig.Graph, node_attr: str | List[str], use_degree: bool = True
+    G: ig.Graph, node_attr: Union[str, List[str]], use_degree: bool = True
 ) -> List[str]:
     """Initialize the node labels.
 
@@ -447,7 +447,7 @@ def _aggregate_neighborhood(
     G: ig.Graph,
     node_idx: int,
     node_labels: List[str],
-    edge_attr: str | List[str] = None,
+    edge_attr: Union[str, List[str]] = None,
 ):
     """Compute new labels for given node by aggregating the labels of each node's neighbors.
 

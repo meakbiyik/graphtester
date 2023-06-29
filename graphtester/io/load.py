@@ -7,7 +7,7 @@ provide a list of networkx or igraph graphs to be used for testing.
 """
 import os
 from pathlib import Path
-from typing import List
+from typing import List, Union
 
 import igraph as ig
 import networkx as nx
@@ -147,9 +147,9 @@ DATASETS = {
 
 def load(
     name_or_graphs: "str | list | dgl.data.DGLDataset | torch_geometric.data.Dataset",  # type: ignore # noqa: F821, E501
-    labels: list[float] = None,
-    node_labels: list[list[float]] = None,
-    edge_labels: list[list[float]] = None,
+    labels: List[float] = None,
+    node_labels: List[List[float]] = None,
+    edge_labels: List[List[float]] = None,
     dataset_name: str = None,
     graph_count: int = None,
     seed: int = 0,
@@ -355,7 +355,7 @@ def _import_ogbl():
 
 
 def _load_graphs(
-    graphs: List[nx.Graph | ig.Graph],
+    graphs: List[Union[nx.Graph, ig.Graph]],
     labels: List = None,
     node_labels: List = None,
     edge_labels: List = None,

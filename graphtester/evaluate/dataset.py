@@ -1,6 +1,6 @@
 """Evaluate a Dataset."""
 from collections import Counter
-from typing import Dict, List, Literal, Optional, Tuple
+from typing import Dict, List, Literal, Optional, Tuple, Union
 
 import igraph as ig
 import pandas as pd
@@ -253,7 +253,7 @@ def evaluate(
     ignore_node_features: bool = False,
     ignore_edge_features: bool = True,
     additional_features: List[str] = None,
-    metrics: List[str | _Metric] = None,
+    metrics: Union[List[str], _Metric] = None,
     iterations: int = 3,
 ) -> EvaluationResult:
     """Evaluate a dataset.
@@ -371,7 +371,7 @@ def _estimate_hashes_at_k_iterations(
     graphs: List[ig.Graph],
     iterations: int = 3,
     return_node_hashes: bool = False,
-) -> Tuple[dict[int, List[str]], dict[int, List[List[str]]]]:
+) -> Tuple[Dict[int, List[str]], Dict[int, List[List[str]]]]:
     """Estimate the 1-WL hashes of a dataset at different iterations.
 
     We simply run 1-WL on all graphs for k iterations and count the
@@ -514,7 +514,7 @@ def _get_isomorphism_list(graphs: List[ig.Graph]) -> List[Optional[int]]:
 
 
 def _evaluate_identifiability(
-    hashes: dict[int, List[str]],
+    hashes: Dict[int, List[str]],
     isomorphism_list: List[Optional[int]],
 ) -> dict:
     """Evaluate the 1-WL-identifiability of a dataset.
@@ -557,8 +557,8 @@ def _evaluate_identifiability(
 
 def _estimate_edge_hashes(
     graphs: List[ig.Graph],
-    node_hashes: dict[int, List[List[str]]],
-) -> dict[int, List[List[str]]]:
+    node_hashes: Dict[int, List[List[str]]],
+) -> Dict[int, List[List[str]]]:
     """Estimate the edge hashes of a dataset.
 
     For each edge, edge hash is the hashes of the nodes at the ends of the edge.
@@ -597,7 +597,7 @@ def _estimate_edge_hashes(
 
 
 def _evaluate_upper_bound_accuracy(
-    hashes: dict[int, List[str]],
+    hashes: Dict[int, List[str]],
     labels: List[int],
 ) -> dict:
     """Evaluate the upper bound accuracy of a dataset.
@@ -638,7 +638,7 @@ def _evaluate_upper_bound_accuracy(
 
 
 def _evaluate_mse(
-    hashes: dict[int, List[str]],
+    hashes: Dict[int, List[str]],
     labels: List[float],
 ) -> dict:
     """Evaluate the mean squared error of a dataset for given node labels.
@@ -678,7 +678,7 @@ def _evaluate_mse(
 
 
 def _evaluate_f1(
-    hashes: dict[int, List[List[str]]],
+    hashes: Dict[int, List[List[str]]],
     labels: List[List[float]],
 ) -> dict:
     """Evaluate the F1 score of a dataset for given node labels.

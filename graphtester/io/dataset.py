@@ -327,7 +327,7 @@ class Dataset:
 
     @staticmethod
     def _clean_graphs(
-        graphs: list[ig.Graph], additional_attrs_to_remove=None
+        graphs: List[ig.Graph], additional_attrs_to_remove=None
     ) -> ig.Graph:
         try:
             from dgl.backend import asnumpy

@@ -61,10 +61,16 @@ jobs:
         run: |
           poetry run flake8 ./graphtester --count  --statistics
 
-      # run test suite
-      - name: Run tests
+      # run isort
+      - name: Run isort
         run: |
-          poetry run pytest tests/
+          poetry run isort ./graphtester --check-only --diff
+
+      # Uncomment when we have tests
+      # # run test suite
+      # - name: Run tests
+      #   run: |
+      #     poetry run pytest tests/
 
       # publish package to PyPI
       - name: Publish package

@@ -2,6 +2,8 @@
 
 Non-private methods in this module needs to be serializeable.
 """
+from typing import List, Union
+
 import igraph as ig
 
 import graphtester as gt
@@ -9,8 +11,8 @@ from graphtester.label import EDGE_LABELING_METHODS, VERTEX_LABELING_METHODS
 
 
 def pretransform(  # noqa: C901
-    features: list[str],
-    feature_names: str | list[str] = None,
+    features: List[str],
+    feature_names: Union[str, List[str]] = None,
     encode: bool = False,
     encode_together: bool = False,
 ):
