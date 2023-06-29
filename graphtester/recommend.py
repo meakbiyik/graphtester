@@ -160,11 +160,16 @@ def recommend(
         dataset.graphs = _clean_graphs(True, True, dataset.graphs)
 
     if features_to_test is None:
-        features_to_test = _determine_features_to_test(node_features, edge_features, fast)
+        features_to_test = _determine_features_to_test(
+            node_features, edge_features, fast
+        )
     else:
         features_to_test = list(features_to_test)
         for feature in features_to_test:
-            if feature not in VERTEX_LABELING_METHODS and feature not in EDGE_LABELING_METHODS:
+            if (
+                feature not in VERTEX_LABELING_METHODS
+                and feature not in EDGE_LABELING_METHODS
+            ):
                 raise ValueError(f"Unknown feature {feature}")
 
     has_node_features = bool(dataset.graphs[0].vertex_attributes())

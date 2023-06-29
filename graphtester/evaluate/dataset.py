@@ -4,7 +4,6 @@ from typing import Dict, List, Literal, Optional, Tuple
 
 import igraph as ig
 import pandas as pd
-import numpy as np
 
 from graphtester.io.dataset import Dataset
 from graphtester.label import label

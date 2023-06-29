@@ -36,9 +36,15 @@ DATASETS = {
     "ZINC_FULL": lambda pyg: pyg.datasets.ZINC(**pyg_param),
     "ZINC": lambda pyg: pyg.datasets.ZINC(subset=True, **pyg_param),
     "MNIST": lambda pyg: pyg.datasets.GNNBenchmarkDataset(name="MNIST", **pyg_param),
-    "CIFAR10": lambda pyg: pyg.datasets.GNNBenchmarkDataset(name="CIFAR10", **pyg_param),
-    "PATTERN": lambda pyg: pyg.datasets.GNNBenchmarkDataset(name="PATTERN", **pyg_param),
-    "CLUSTER": lambda pyg: pyg.datasets.GNNBenchmarkDataset(name="CLUSTER", **pyg_param),
+    "CIFAR10": lambda pyg: pyg.datasets.GNNBenchmarkDataset(
+        name="CIFAR10", **pyg_param
+    ),
+    "PATTERN": lambda pyg: pyg.datasets.GNNBenchmarkDataset(
+        name="PATTERN", **pyg_param
+    ),
+    "CLUSTER": lambda pyg: pyg.datasets.GNNBenchmarkDataset(
+        name="CLUSTER", **pyg_param
+    ),
     # TU datasets
     # Small molecules - TU
     "AIDS": lambda dgl: dgl.data.TUDataset("AIDS", **dgl_param),
@@ -76,28 +82,56 @@ DATASETS = {
     "REDDIT-MULTI-5K": lambda dgl: dgl.data.TUDataset("REDDIT-MULTI-5K", **dgl_param),
     # OGB datasets
     # graph classification
-    "ogbg-molbace": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-molbace", **ogb_param),
-    "ogbg-molbbbp": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-molbbbp", **ogb_param),
-    "ogbg-molclintox": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-molclintox", **ogb_param),
-    "ogbg-molmuv": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-molmuv", **ogb_param),
-    "ogbg-molsider": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-molsider", **ogb_param),
-    "ogbg-molhiv": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-molhiv", **ogb_param),
-    "ogbg-molpcba": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-molpcba", **ogb_param),
-    "ogbg-moltox21": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-moltox21", **ogb_param),
-    "ogbg-moltoxcast": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-moltoxcast", **ogb_param),
+    "ogbg-molbace": lambda ogbg: ogbg.DglGraphPropPredDataset(
+        "ogbg-molbace", **ogb_param
+    ),
+    "ogbg-molbbbp": lambda ogbg: ogbg.DglGraphPropPredDataset(
+        "ogbg-molbbbp", **ogb_param
+    ),
+    "ogbg-molclintox": lambda ogbg: ogbg.DglGraphPropPredDataset(
+        "ogbg-molclintox", **ogb_param
+    ),
+    "ogbg-molmuv": lambda ogbg: ogbg.DglGraphPropPredDataset(
+        "ogbg-molmuv", **ogb_param
+    ),
+    "ogbg-molsider": lambda ogbg: ogbg.DglGraphPropPredDataset(
+        "ogbg-molsider", **ogb_param
+    ),
+    "ogbg-molhiv": lambda ogbg: ogbg.DglGraphPropPredDataset(
+        "ogbg-molhiv", **ogb_param
+    ),
+    "ogbg-molpcba": lambda ogbg: ogbg.DglGraphPropPredDataset(
+        "ogbg-molpcba", **ogb_param
+    ),
+    "ogbg-moltox21": lambda ogbg: ogbg.DglGraphPropPredDataset(
+        "ogbg-moltox21", **ogb_param
+    ),
+    "ogbg-moltoxcast": lambda ogbg: ogbg.DglGraphPropPredDataset(
+        "ogbg-moltoxcast", **ogb_param
+    ),
     # node classification
     "ogbn-arxiv": lambda ogbn: ogbn.DglNodePropPredDataset("ogbn-arxiv", **ogb_param),
-    "ogbn-proteins": lambda ogbn: ogbn.DglNodePropPredDataset("ogbn-proteins", **ogb_param),
-    "ogbn-products": lambda ogbn: ogbn.DglNodePropPredDataset("ogbn-products", **ogb_param),
+    "ogbn-proteins": lambda ogbn: ogbn.DglNodePropPredDataset(
+        "ogbn-proteins", **ogb_param
+    ),
+    "ogbn-products": lambda ogbn: ogbn.DglNodePropPredDataset(
+        "ogbn-products", **ogb_param
+    ),
     # link prediction
-    # "ogbl-collab": lambda ogbl: ogbl.DglLinkPropPredDataset("ogbl-collab", **ogb_param),
+    # "ogbl-collab": lambda ogbl: ogbl.DglLinkPropPredDataset("ogbl-collab", **ogb_param), # noqa: E501
     # "ogbl-ddi": lambda ogbl: ogbl.DglLinkPropPredDataset("ogbl-ddi", **ogb_param),
     # "ogbl-ppa": lambda ogbl: ogbl.DglLinkPropPredDataset("ogbl-ppa", **ogb_param),
-    # "ogbl-citation2": lambda ogbl: ogbl.DglLinkPropPredDataset("ogbl-citation2", **ogb_param),
+    # "ogbl-citation2": lambda ogbl: ogbl.DglLinkPropPredDataset("ogbl-citation2", **ogb_param), # noqa: E501
     # graph regression
-    "ogbg-molesol": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-molesol", **ogb_param),
-    "ogbg-molfreesolv": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-molfreesolv", **ogb_param),
-    "ogbg-mollipo": lambda ogbg: ogbg.DglGraphPropPredDataset("ogbg-mollipo", **ogb_param),
+    "ogbg-molesol": lambda ogbg: ogbg.DglGraphPropPredDataset(
+        "ogbg-molesol", **ogb_param
+    ),
+    "ogbg-molfreesolv": lambda ogbg: ogbg.DglGraphPropPredDataset(
+        "ogbg-molfreesolv", **ogb_param
+    ),
+    "ogbg-mollipo": lambda ogbg: ogbg.DglGraphPropPredDataset(
+        "ogbg-mollipo", **ogb_param
+    ),
     # DGL node classification datasets
     "Cora": lambda dgl: dgl.data.CoraGraphDataset(**dgl_param),
     "Citeseer": lambda dgl: dgl.data.CiteseerGraphDataset(**dgl_param),
@@ -112,7 +146,7 @@ DATASETS = {
 
 
 def load(
-    name_or_graphs: "str | list | dgl.data.DGLDataset | torch_geometric.data.Dataset",  # type: ignore # noqa: F821
+    name_or_graphs: "str | list | dgl.data.DGLDataset | torch_geometric.data.Dataset",  # type: ignore # noqa: F821, E501
     labels: list[float] = None,
     node_labels: list[list[float]] = None,
     edge_labels: list[list[float]] = None,
@@ -124,7 +158,7 @@ def load(
 
     Parameters
     ----------
-    name_or_graphs : str or List[Union[nx.Graph, ig.Graph, dgl.data.DGLDataset, torch_geometric.data.Dataset]]
+    name_or_graphs : str or List[Union[nx.Graph, ig.Graph, dgl.data.DGLDataset, torch_geometric.data.Dataset]] # noqa: E501
         The name of the dataset to load, or a list of graphs, or a dataset
         object from DGL or PyTorch Geometric.
     labels : List[float], optional
@@ -154,7 +188,9 @@ def load(
     dataset : Dataset
     """
     if isinstance(name_or_graphs, str):
-        dataset = _load_dataset(name_or_graphs, labels, node_labels, edge_labels, graph_count, seed)
+        dataset = _load_dataset(
+            name_or_graphs, labels, node_labels, edge_labels, graph_count, seed
+        )
     elif isinstance(name_or_graphs, list):
         dataset = _load_graphs(name_or_graphs, labels, node_labels, edge_labels)
         if graph_count is not None and graph_count < len(dataset):
@@ -163,12 +199,16 @@ def load(
         base.__name__ == "DGLBuiltinDataset" or base.__name__ == "DGLDataset"
         for base in type(name_or_graphs).__bases__
     ):
-        dataset = Dataset.from_dgl(name_or_graphs, labels, node_labels, edge_labels, graph_count, seed)
+        dataset = Dataset.from_dgl(
+            name_or_graphs, labels, node_labels, edge_labels, graph_count, seed
+        )
     elif any(
         base.__name__ == "InMemoryDataset" or base.__name__ == "Dataset"
         for base in type(name_or_graphs).__bases__
     ):
-        dataset = Dataset.from_pyg(name_or_graphs, labels, node_labels, edge_labels, graph_count, seed)
+        dataset = Dataset.from_pyg(
+            name_or_graphs, labels, node_labels, edge_labels, graph_count, seed
+        )
     else:
         raise TypeError(f"Unsupported type {type(name_or_graphs)}")
 
@@ -181,7 +221,12 @@ def load(
 
 
 def _load_dataset(
-    name: str, labels: List = None, node_labels: List = None, edge_labels: List = None, graph_count: int = None, seed: int = 0
+    name: str,
+    labels: List = None,
+    node_labels: List = None,
+    edge_labels: List = None,
+    graph_count: int = None,
+    seed: int = 0,
 ) -> Dataset:
     """Load a dataset.
 
@@ -221,28 +266,38 @@ def _load_dataset(
     if name.startswith("ogbg"):
         ogb = _import_ogbg()
         ogb_dataset = DATASETS[name](ogb)
-        return Dataset.from_dgl(ogb_dataset, labels, node_labels, edge_labels, graph_count, seed)
+        return Dataset.from_dgl(
+            ogb_dataset, labels, node_labels, edge_labels, graph_count, seed
+        )
 
     if name.startswith("ogbn"):
         ogb = _import_ogbn()
         ogb_dataset = DATASETS[name](ogb)
-        return Dataset.from_dgl(ogb_dataset, labels, node_labels, edge_labels, graph_count, seed)
+        return Dataset.from_dgl(
+            ogb_dataset, labels, node_labels, edge_labels, graph_count, seed
+        )
 
     if name.startswith("ogbl"):
         ogb = _import_ogbl()
         ogb_dataset = DATASETS[name](ogb)
-        return Dataset.from_dgl(ogb_dataset, labels, node_labels, edge_labels, graph_count, seed)
+        return Dataset.from_dgl(
+            ogb_dataset, labels, node_labels, edge_labels, graph_count, seed
+        )
 
     # Otherwise either a DGL or PyG dataset
     try:
         dgl = _import_dgl()
         dgl_dataset = DATASETS[name](dgl)
-        return Dataset.from_dgl(dgl_dataset, labels, node_labels, edge_labels, graph_count, seed)
+        return Dataset.from_dgl(
+            dgl_dataset, labels, node_labels, edge_labels, graph_count, seed
+        )
 
     except AttributeError:
         pyg = _import_pyg()
         pyg_dataset = DATASETS[name](pyg)
-        return Dataset.from_pyg(pyg_dataset, labels, node_labels, edge_labels, graph_count, seed)
+        return Dataset.from_pyg(
+            pyg_dataset, labels, node_labels, edge_labels, graph_count, seed
+        )
 
 
 def _import_dgl():
@@ -262,9 +317,7 @@ def _import_pyg():
     try:
         import torch_geometric
     except ModuleNotFoundError:
-        raise ModuleNotFoundError(
-            "PyTorch Geometric is required for PyG datasets."
-        )
+        raise ModuleNotFoundError("PyTorch Geometric is required for PyG datasets.")
     return torch_geometric
 
 

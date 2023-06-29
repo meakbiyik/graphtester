@@ -619,22 +619,22 @@ VERTEX_LABELING_METHODS = {
     "Laplacian positional encoding (dim=32)": lambda g: _laplacian_positional_encoding(
         g, dim=32
     ),
-    "Random walk structural encoding (steps=1)": lambda g: _random_walk_structural_encoding(
+    "Random walk structural encoding (steps=1)": lambda g: _random_walk_structural_encoding(  # noqa: E501
         g, steps=1
     ),
-    "Random walk structural encoding (steps=2)": lambda g: _random_walk_structural_encoding(
+    "Random walk structural encoding (steps=2)": lambda g: _random_walk_structural_encoding(  # noqa: E501
         g, steps=2
     ),
-    "Random walk structural encoding (steps=4)": lambda g: _random_walk_structural_encoding(
+    "Random walk structural encoding (steps=4)": lambda g: _random_walk_structural_encoding(  # noqa: E501
         g, steps=4
     ),
-    "Random walk structural encoding (steps=8)": lambda g: _random_walk_structural_encoding(
+    "Random walk structural encoding (steps=8)": lambda g: _random_walk_structural_encoding(  # noqa: E501
         g, steps=8
     ),
-    "Random walk structural encoding (steps=16)": lambda g: _random_walk_structural_encoding(
+    "Random walk structural encoding (steps=16)": lambda g: _random_walk_structural_encoding(  # noqa: E501
         g, steps=16
     ),
-    "Random walk structural encoding (steps=32)": lambda g: _random_walk_structural_encoding(
+    "Random walk structural encoding (steps=32)": lambda g: _random_walk_structural_encoding(  # noqa: E501
         g, steps=32
     ),
     "Marked WL hash vertex label": _wl_hash_vertex_label,

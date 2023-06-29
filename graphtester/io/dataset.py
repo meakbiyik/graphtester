@@ -88,8 +88,8 @@ class Dataset:
         dataset : Dataset
             The Dataset.
         """
-        import dgl.backend as F
         import dgl
+        import dgl.backend as F
 
         if dgl_dataset.name.startswith("ogbn"):
             # hack to get around the fact that the ogbn datasets
@@ -108,17 +108,42 @@ class Dataset:
             with_node_labels = False
             with_edge_labels = True
             # add labels to the graph - we do not admit heterogeneous graphs
-            edge_split =  dgl_dataset.get_edge_split()
+            edge_split = dgl_dataset.get_edge_split()
             first_graph = dgl_dataset.graph[0]
-            pos_edges = F.cat([edge_split['train']['edge'], edge_split['valid']['edge'], edge_split['test']['edge']], dim=0)
-            neg_edges = F.cat([edge_split['valid']['edge_neg'], edge_split['test']['edge_neg']], dim=0)
+            pos_edges = F.cat(
+                [
+                    edge_split["train"]["edge"],
+                    edge_split["valid"]["edge"],
+                    edge_split["test"]["edge"],
+                ],
+                dim=0,
+            )
+            neg_edges = F.cat(
+                [edge_split["valid"]["edge_neg"], edge_split["test"]["edge_neg"]], dim=0
+            )
             # we have edge indices, so we need to set the type of these edges
             # we do this by adding these edges to the graph, then removing duplicates
             # by calling to_simple
-            # FIXME: neg-pos edge handling, currently we cannot distingusih non-given edges and assign negative
-            first_graph.add_edges(pos_edges[:, 0], pos_edges[:, 1], data={"e_type": F.zeros_like(pos_edges[:, 0]) + 1})
-            first_graph.add_edges(neg_edges[:, 0], neg_edges[:, 1], data={"e_type": F.zeros_like(neg_edges[:, 0])})
-            first_graph = dgl.to_simple(first_graph, return_counts=None, writeback_mapping=False, copy_ndata =True, copy_edata=True, aggregator="sum")
+            # FIXME: neg-pos edge handling, currently we cannot distinguish
+            #        non-given edges and assign negative
+            first_graph.add_edges(
+                pos_edges[:, 0],
+                pos_edges[:, 1],
+                data={"e_type": F.zeros_like(pos_edges[:, 0]) + 1},
+            )
+            first_graph.add_edges(
+                neg_edges[:, 0],
+                neg_edges[:, 1],
+                data={"e_type": F.zeros_like(neg_edges[:, 0])},
+            )
+            first_graph = dgl.to_simple(
+                first_graph,
+                return_counts=None,
+                writeback_mapping=False,
+                copy_ndata=True,
+                copy_edata=True,
+                aggregator="sum",
+            )
             dgl_dataset.__getitem__ = lambda i: dgl_dataset.graph[i]
         else:
             with_graph_labels = isinstance(dgl_dataset[0], tuple)
@@ -200,9 +225,10 @@ class Dataset:
             edge_labels,
             dgl_dataset.name,
         )
-    
+
     @classmethod
-    def from_pyg(cls,
+    def from_pyg(
+        cls,
         pyg_dataset,
         labels: List[float] = None,
         node_labels: List[List[float]] = None,
@@ -234,16 +260,16 @@ class Dataset:
         dataset : Dataset
             The Dataset.
         """
-        from torch_geometric.utils import to_networkx
-        from torch_geometric.data import Data
         import torch
+        from torch_geometric.data import Data
+        from torch_geometric.utils import to_networkx
 
         if hasattr(pyg_dataset[0], "y"):
             with_node_labels = pyg_dataset[0].y.shape[0] == pyg_dataset[0].num_nodes
             with_graph_labels = not with_node_labels
         else:
             with_graph_labels, with_node_labels = False, False
-        with_edge_labels = hasattr(pyg_dataset, "get_edge_split")
+        # with_edge_labels = hasattr(pyg_dataset, "get_edge_split")
         # TODO: edge labels
 
         dataset_size = len(pyg_dataset)
@@ -254,13 +280,15 @@ class Dataset:
             ).tolist()
         else:
             indices = range(dataset_size)
-        
+
         graphs, _labels, _node_labels = [], [], []
         for i in indices:
             data_obj: Data = pyg_dataset[i]
             node_attributes = data_obj.node_attrs()
             edge_attributes = [a for a in data_obj.edge_attrs() if a != "edge_index"]
-            graph = to_networkx(data_obj, node_attrs=node_attributes, edge_attrs=edge_attributes)
+            graph = to_networkx(
+                data_obj, node_attrs=node_attributes, edge_attrs=edge_attributes
+            )
             graphs.append(ig.Graph.from_networkx(graph))
             if with_graph_labels:
                 if torch.numel(data_obj.y) > 1:
@@ -275,7 +303,9 @@ class Dataset:
                 if torch.numel(data_obj.x[0]) > 1:
                     # try to convert from one-hot encoding
                     try:
-                        _node_labels.append([float(np.where(lbl == 1)[0]) for lbl in data_obj.x])
+                        _node_labels.append(
+                            [float(np.where(lbl == 1)[0]) for lbl in data_obj.x]
+                        )
                     except ValueError:
                         raise ValueError("Multi-task classification not yet supported.")
                 else:
@@ -294,15 +324,17 @@ class Dataset:
             node_labels,
             edge_labels,
         )
-    
+
     @staticmethod
-    def _clean_graphs(graphs: list[ig.Graph], additional_attrs_to_remove=None) -> ig.Graph:
+    def _clean_graphs(
+        graphs: list[ig.Graph], additional_attrs_to_remove=None
+    ) -> ig.Graph:
         try:
             from dgl.backend import asnumpy
         except ImportError:
             # assume pytorch
-            asnumpy = lambda x: x.numpy(force=True)
-        
+            asnumpy = lambda x: x.numpy(force=True)  # noqa: E731
+
         def simplify(val):
             if isinstance(val, np.ndarray):
                 return val.astype(float).round(2).tolist()
@@ -312,7 +344,7 @@ class Dataset:
                 return float(val)
             else:
                 return np.squeeze(asnumpy(val).astype(float).round(2)).tolist()
-        
+
         # Remove superfluous attributes and convert tensors to lists
         # Also remove the node_label attribute if exists
         additional_attrs_to_remove = additional_attrs_to_remove or []
@@ -334,15 +366,9 @@ class Dataset:
                 if attr in graph.es.attributes():
                     del graph.es[attr]
             for attr in graph.vs.attributes():
-                graph.vs[attr] = [
-                    simplify(x)
-                    for x in graph.vs[attr]
-                ]
+                graph.vs[attr] = [simplify(x) for x in graph.vs[attr]]
             for attr in graph.es.attributes():
-                graph.es[attr] = [
-                    simplify(x)
-                    for x in graph.es[attr]
-                ]
+                graph.es[attr] = [simplify(x) for x in graph.es[attr]]
             graphs[idx] = graph
 
         return graphs
