@@ -2,6 +2,18 @@
 
 Graphtester is a Python package for comprehensive analysis of the theoretical capabilities of GNNs for various datasets, tasks, and scores, using and extension of the Weisfeiler-Lehman framework.
 
+If you use Graphtester in your research, please cite the following paper:
+
+```bibtex
+@inproceedings{akbiyik2023graphtester,
+    title        = {{Graphtester: Exploring Theoretical Boundaries of GNNs on Graph Datasets}},
+    author       = {Eren Akbiyik and Florian Grötschla and Béni Egressy and Roger Wattenhofer},
+    year         = 2023,
+    month        = {July},
+    booktitle    = {{Data-centric Machine Learning Research (DMLR) Workshop at ICML 2023, Honolulu, Hawaii}}
+}
+```
+
 ## Usage
 
 Graphtester can load, label, analyze, and test datasets. The following example shows how to load a dataset, label it, and test it with a GNN.
@@ -15,6 +27,7 @@ import graphtester as gt
 
 dataset = gt.load("MUTAG")
 ```
+
 <details>
 <summary>See datasets that can be loaded with their names</summary>
 
@@ -116,65 +129,64 @@ dataset = gt.load("GT")
 
 ### Motivation
 
-**For what purpose was the dataset created?** 
+**For what purpose was the dataset created?**
 
 Dataset is created to assess the expressive power of node and edge features in the framework of 1-Weisfeiler-Lehman test. Our expected use case is to compare potential positional encodings for tasks on graph datasets that researchers use GNN and GT models on.
 
-**Who created the dataset and on behalf of which entity?** 
+**Who created the dataset and on behalf of which entity?**
 
 This will be revealed upon acceptance.
 
-**Who funded the creation of the dataset?** 
+**Who funded the creation of the dataset?**
 
 This will be revealed upon acceptance.
 
 ### Composition
 
-**What do the instances that comprise the dataset represent?** 
+**What do the instances that comprise the dataset represent?**
 
 Dataset contains synthetic undirected graphs without any node and edge labels, that are known to belong certain graph classes of certain order.
 
-**How many instances are there in total?** 
+**How many instances are there in total?**
 
 There are 55,340 graphs in the dataset in total. Graphs are not necessarily non-isomorphic, since some graph classes overlap with each other.
 
-**Does the dataset contain all possible instances or is it a sample (not necessarily random) of instances from a larger set?** 
+**Does the dataset contain all possible instances or is it a sample (not necessarily random) of instances from a larger set?**
 
 Graphs are not randomly generate nor selected. For all graph classes other than distance-regular graphs, they exhaustively represent the graphs that belong to the given order of their class. For distance-regular graphs, we use the whole compilation in Bailey et al. (2019).
 
-**What data does each instance consist of?** 
+**What data does each instance consist of?**
 
 The data instances consist of iGraph objects (Csardi and Nepusz, 2006), without any node and edge features.
 
-**Is there a label or target associated with each instance?** 
+**Is there a label or target associated with each instance?**
 
 There are no label associated with the instances. The task is to be able to distinguish all pairs of graphs in a certain graph class and order, for all given graph classes. In total, task requires 225'930'287 million successful pairwise comparisons.
 
-**Is any information missing from individual instances?** 
+**Is any information missing from individual instances?**
 
 No.
 
-**Are there recommended data splits (e.g., training, development/validation, testing)?** 
+**Are there recommended data splits (e.g., training, development/validation, testing)?**
 
 Dataset is to be consumed as-is, and does not require any training-test split since there is no concept of training or overfitting on exhaustive domains.
 
-**Are there any errors, sources of noise, or redundancies in the dataset?** 
+**Are there any errors, sources of noise, or redundancies in the dataset?**
 
 Not to the knowledge of the authors.
 
-**Is the dataset self-contained, or does it link to or otherwise rely on external resources (e.g., websites, tweets, other datasets)?** 
+**Is the dataset self-contained, or does it link to or otherwise rely on external resources (e.g., websites, tweets, other datasets)?**
 
 Dataset is fully self-contained, and possible to regenerate from scratch if needed.
 
-**Does the dataset contain data that might be considered confidential (e.g., data that is protected by legal privilege or by doctor– patient confidentiality, data that includes the content of individuals’ non-public communications)?** 
+**Does the dataset contain data that might be considered confidential (e.g., data that is protected by legal privilege or by doctor– patient confidentiality, data that includes the content of individuals’ non-public communications)?**
 
 No.
 
-**Does the dataset contain data that, if viewed directly, might be offensive, insulting, threatening, or might otherwise cause anxiety?** 
+**Does the dataset contain data that, if viewed directly, might be offensive, insulting, threatening, or might otherwise cause anxiety?**
 
 No.
 </details>
-
 
 ## Installation
 
