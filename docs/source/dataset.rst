@@ -1,4 +1,4 @@
-Graphtester (`GT`) dataset
+Graphtester dataset
 ============================
 
 Graphtester also comes with a synthetic graph dataset, referred to as `GT` in the package, that uniquely serves as a rigorous testing ground for the effectiveness of node and edge pre-coloring methods within the 1-Weisfeiler-Lehman (1-WL) framework. It can be loaded similarly to other datasets.
