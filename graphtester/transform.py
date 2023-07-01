@@ -45,9 +45,9 @@ def pretransform(  # noqa: C901
 
     Parameters
     ----------
-    features : list[str]
+    features : List[str]
         List of features to add to the data object.
-    feature_names : str | list[str], optional
+    feature_names : str | List[str], optional
         List of names to use for the features, or a single feature name to
         add the data altogether, by default None
     encode : bool, optional

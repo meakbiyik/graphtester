@@ -1,4 +1,6 @@
 """Recommend additional features to add to a dataset."""
+from typing import Dict, List, Tuple
+
 import pandas as pd
 
 from graphtester.evaluate.dataset import (
@@ -18,8 +20,8 @@ class RecommendationResult:
     def __init__(
         self,
         dataset: Dataset,
-        results: dict[tuple[str, tuple[str]], EvaluationResult],
-        metrics: list[_Metric],
+        results: Dict[Tuple[str, Tuple[str]], EvaluationResult],
+        metrics: List[_Metric],
         iterations: int,
     ):
         """Initialize a recommendation result.
@@ -28,12 +30,12 @@ class RecommendationResult:
         ----------
         dataset : Dataset
             The dataset that was recommended features for.
-        results : dict[tuple[str, tuple[str]], EvaluationResult]
+        results : Dict[ Tuple[str, Tuple[str]], EvaluationResult]
             The evaluation results for each recommended feature. The index
             of this dictionary is a tuple of the state of the dataset (with or
             without node or edge features) and the features that were added to
             achieve the values at the EvaluationResult.
-        metrics : list[_Metric]
+        metrics : List[_Metric]
             The metrics that were evaluated.
         iterations : int
             The number of iterations that were performed.
@@ -106,7 +108,7 @@ class RecommendationResult:
 
 def recommend(
     dataset: Dataset,
-    metrics: list[str],
+    metrics: List[str],
     max_feature_count=3,
     features_to_test=None,
     node_features=True,
@@ -128,11 +130,11 @@ def recommend(
     ----------
     dataset : Dataset
         The dataset to recommend features for.
-    metrics : list[str]
+    metrics : List[str]
         The metrics to evaluate the dataset on.
     max_feature_count : int, optional
         The maximum number of features to combine into a set, by default 3
-    features_to_test : list[str], optional
+    features_to_test : List[str], optional
         The features to test, by default None. If None, all features will be tested,
         depending on node_features, edge_features and fast arguments (see below).
     node_features : bool, optional
@@ -265,7 +267,7 @@ def _evaluate_features(
 
 def _determine_features_to_test(
     node_features: bool, edge_features: bool, fast: bool
-) -> list[str]:
+) -> List[str]:
     """Determine the methods to test for recommendation.
 
     Parameters
@@ -279,7 +281,7 @@ def _determine_features_to_test(
 
     Returns
     -------
-    list[str]
+    List[str]
         The methods to test.
     """
     features_to_test = []
@@ -314,7 +316,7 @@ def _determine_features_to_test(
 def _result_is_better(
     result: EvaluationResult,
     best_result: EvaluationResult,
-    metrics: list[str],
+    metrics: List[str],
     iterations: int,
 ) -> bool:
     """Check whether a result is better than another.
@@ -325,7 +327,7 @@ def _result_is_better(
         The result to check.
     best_result : EvaluationResult
         The best result so far.
-    metrics : list[str]
+    metrics : List[str]
         The metrics to evaluate the dataset on.
     iterations : int
         The number of iterations to run the comparison for.

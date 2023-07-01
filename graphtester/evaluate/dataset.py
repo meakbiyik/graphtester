@@ -260,12 +260,12 @@ def evaluate(
 
     This method analyzes how "hard" a dataset is to classify from 1-WL perspective.
     It does so by computing the following metrics:
-        1. 1-WL-identifiability: the percentage of graphs that can be uniquely
-            identified with 1-WL algorithm at k iterations. Calculated if
-            len(dataset) > 0.
-        2. Upper bound accuracy: the upper bound accuracy of 1-WL algorithm at
-            k iterations for labeled datasets, considering majority vote. Calculated
-            if len(dataset) > 0.
+    1. 1-WL-identifiability: the percentage of graphs that can be uniquely
+    identified with 1-WL algorithm at k iterations. Calculated if
+    len(dataset) > 0.
+    2. Upper bound accuracy: the upper bound accuracy of 1-WL algorithm at
+    k iterations for labeled datasets, considering majority vote. Calculated
+    if len(dataset) > 0.
 
     The analysis admits additional structural features, which are computed for each
     graph and added as node and/or edge feature.
@@ -285,9 +285,9 @@ def evaluate(
     metrics : List[str], optional
         The metrics to use for evaluation. If None (default), all metrics are used.
         Currently, the following metrics are supported:
-            - "identifiability": 1-WL-identifiability
-            - "upper_bound_accuracy": Upper bound accuracy
-            - "upper_bound_accuracy_node": Upper bound accuracy (node labels)
+        - "identifiability": 1-WL-identifiability
+        - "upper_bound_accuracy": Upper bound accuracy
+        - "upper_bound_accuracy_node": Upper bound accuracy (node labels)
     iterations : int, optional
         The number of iterations to run 1-WL for, by default 3
 
@@ -296,7 +296,7 @@ def evaluate(
     result : EvaluationResult
         The evaluation results object.
     """
-    metrics: list[_Metric] = _init_metrics(dataset, metrics)
+    metrics: List[_Metric] = _init_metrics(dataset, metrics)
 
     graphs = dataset.graphs
     if ignore_node_features or ignore_edge_features:
@@ -389,9 +389,9 @@ def _estimate_hashes_at_k_iterations(
 
     Returns
     -------
-    hashes : dict[int, List[str]]
+    hashes : Dict[int, List[str]]
         The estimated hashes of the graphs.
-    node_hashes : dict[int, List[List[str]]]
+    node_hashes : Dict[int, List[List[str]]]
         The estimated node hashes of the graphs. Only returned if
         `return_node_hashes` is True.
     """
@@ -529,14 +529,14 @@ def _evaluate_identifiability(
 
     Parameters
     ----------
-    hashes : dict[int, List[str]]
+    hashes : Dict[int, List[str]]
         The estimated hashes of the graphs at different iterations.
     isomorphism_list : List[Optional[int]]
         The isomorphism list of the dataset.
 
     Returns
     -------
-    identifiability : dict[int, float]
+    identifiability : Dict[int, float]
         The identifiability of the dataset.
     """
     isomorphic_graph_mask = [idx is None for idx in isomorphism_list]
@@ -568,12 +568,12 @@ def _estimate_edge_hashes(
     ----------
     graphs : List[ig.Graph]
         The graphs in the dataset.
-    node_hashes : dict[int, List[List[str]]]
+    node_hashes : Dict[int, List[List[str]]]
         The estimated hashes of the nodes at different iterations.
 
     Returns
     -------
-    edge_hashes : dict[int, List[List[str]]]
+    edge_hashes : Dict[int, List[List[str]]]
         The estimated hashes of the edges at different iterations.
     """
     edge_hashes = {}
@@ -609,14 +609,14 @@ def _evaluate_upper_bound_accuracy(
 
     Parameters
     ----------
-    hashes : dict[int, List[str]]
+    hashes : Dict[int, List[str]]
         The estimated hashes of the graphs/nodes/edges at different iterations.
     labels : List[int]
         The labels of the graphs/nodes/edges in the dataset.
 
     Returns
     -------
-    upper_bound_accuracy : dict[int, float]
+    upper_bound_accuracy : Dict[int, float]
         The upper bound accuracy of the dataset.
     """
     upper_bound_accuracy = {}
@@ -650,14 +650,14 @@ def _evaluate_mse(
 
     Parameters
     ----------
-    hashes : dict[int, List[str]]
+    hashes : Dict[int, List[str]]
         The estimated hashes of the graphs/nodes/edges at different iterations.
     labels : List[float]
         The labels of the graphs/nodes/edges in the dataset.
 
     Returns
     -------
-    mse : dict[int, float]
+    mse : Dict[int, float]
         The mean squared error of the dataset.
     """
     mse = {}
@@ -690,14 +690,14 @@ def _evaluate_f1(
 
     Parameters
     ----------
-    hashes : dict[int, List[str]]
+    hashes : Dict[int, List[str]]
         The estimated hashes of the graphs/nodes/edges at different iterations.
     labels : List[int]
         The labels of the graphs/nodes/edges in the dataset.
 
     Returns
     -------
-    f1 : dict[int, float]
+    f1 : Dict[int, float]
         The F1 score of the dataset.
     """
     f1 = {}
