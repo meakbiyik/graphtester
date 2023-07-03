@@ -8,7 +8,9 @@ Graphtester documentation
 
 Graphtester is a Python package for comprehensive analysis of the theoretical capabilities of GNNs for various datasets, tasks, and scores, using and extension of the Weisfeiler-Lehman framework.
 
-If you use Graphtester in your research, please cite the following paper:
+You can read more about the theoretical background in our paper: https://arxiv.org/abs/2306.17482
+
+If you use Graphtester in your research, please cite:
 
 .. code-block:: none
 
