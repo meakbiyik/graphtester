@@ -7,8 +7,8 @@ from graphtester.evaluate.dataset import DEFAULT_METRICS, _Metric
 from graphtester.io.dataset import Dataset
 from graphtester.io.load import DATASETS
 
-MULTIPROCESSING = True
-ONLY_RECOMMENDATION = True
+MULTIPROCESSING = False
+ONLY_RECOMMENDATION = False
 WITH_ORIGINAL_FEATS = True
 FEATURES_TO_TEST = [
     "Eigenvector centrality",
@@ -19,15 +19,26 @@ FEATURES_TO_TEST = [
     "Burt's constraint",
     "Betweenness centrality",
 ]
-GRAPH_COUNT = 10000 # If the dataset has more graphs than this, it is subsampled
+GRAPH_COUNT = 10000  # If the dataset has more graphs than this, it is subsampled
 ITERATIONS = 3
 USE_NODE_HASHES_FOR_GRAPH = False
+ONLY_EVALUATE_NON_GRAPH_TASKS = False
 
 datasets_to_skip = ["GT", "GT-small", "ZINC_FULL"]
 if USE_NODE_HASHES_FOR_GRAPH:
     datasets_to_evaluate = ["ZINC", "MNIST", "CIFAR10"]
+elif ONLY_EVALUATE_NON_GRAPH_TASKS:
+    datasets_to_evaluate = [
+        dataset
+        for dataset in DATASETS
+        if dataset not in datasets_to_skip
+        and (dataset.node_labels is not None or dataset.edge_labels is not None)
+    ]
 else:
-    datasets_to_evaluate = [dataset for dataset in DATASETS if dataset not in datasets_to_skip]
+    datasets_to_evaluate = [
+        dataset for dataset in DATASETS if dataset not in datasets_to_skip
+    ]
+
 
 def select_metric(dataset: Dataset) -> _Metric:
     """Select the metric to use for a dataset."""
@@ -97,7 +108,8 @@ def analyze_dataset(dataset_name: str):
             print(evaluation, flush=True)
 
     recommender_filename = (
-        f"recommendation_{dataset_name}{'_regression' if is_regression else '_classification'}"
+        f"recommendation_{dataset_name}"
+        f"{'_regression' if is_regression else '_classification'}"
         f"{'_without_original_feats' if not WITH_ORIGINAL_FEATS else ''}"
         f"_{ITERATIONS}_iter"
         f"{'_with_node_hashes' if USE_NODE_HASHES_FOR_GRAPH else ''}"
@@ -125,7 +137,8 @@ def analyze_dataset(dataset_name: str):
     )
 
     # pickle the recommendation
-    with open(recommender_filename,
+    with open(
+        recommender_filename,
         "wb",
     ) as f:
         pickle.dump(recommendation, f)

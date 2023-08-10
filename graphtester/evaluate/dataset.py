@@ -255,17 +255,14 @@ def evaluate(
     additional_features: List[str] = None,
     metrics: Union[List[str], _Metric] = None,
     iterations: int = 3,
+    transformer: bool = False,
 ) -> EvaluationResult:
     """Evaluate a dataset.
 
     This method analyzes how "hard" a dataset is to classify from 1-WL perspective.
-    It does so by computing the following metrics:
-    1. 1-WL-identifiability: the percentage of graphs that can be uniquely
-    identified with 1-WL algorithm at k iterations. Calculated if
-    len(dataset) > 0.
-    2. Upper bound accuracy: the upper bound accuracy of 1-WL algorithm at
-    k iterations for labeled datasets, considering majority vote. Calculated
-    if len(dataset) > 0.
+    It does so by calculating the 1-WL hashes of each node and graph in the dataset
+    and then estimating bounds of the accuracy of a predictor that uses these hashes as
+    features.
 
     The analysis admits additional structural features, which are computed for each
     graph and added as node and/or edge feature.
@@ -290,6 +287,18 @@ def evaluate(
         - "upper_bound_accuracy_node": Upper bound accuracy (node labels)
     iterations : int, optional
         The number of iterations to run 1-WL for, by default 3
+    transformer : bool, optional
+        Whether to assume transformer-style node labels, by default False. If True,
+        the graph labels are appended to each node label before estimating a
+        node or link prediction tasks' bounds. Note that this has no effect for graph
+        prediction tasks.
+
+        From a theoretical perspective, this is equivalent to the way a graph
+        transformer would predict a node or edge label since each node can attend
+        to all other nodesin the graph, consequently understanding the graph
+        structure from a 1-WL perspective. GNNs however often does not make
+        use of a readout layer for node or edge prediction tasks, which is why
+        this option is disabled by default.
 
     Returns
     -------
@@ -315,6 +324,9 @@ def evaluate(
     hashes, node_hashes = _estimate_hashes_at_k_iterations(
         graphs.copy(), iterations, estimate_node_hashes
     )
+
+    if transformer and (estimate_edge_hashes or estimate_node_hashes):
+        node_hashes = _transformer_node_hashes(node_hashes, hashes)
 
     edge_hashes = None
     if estimate_edge_hashes:
@@ -439,6 +451,40 @@ def _estimate_hashes_at_k_iterations(
         last_node_hashes = new_node_hashes
         k += 1
     return (hashes, node_hashes)
+
+
+def _transformer_node_hashes(
+    node_hashes: Dict[int, List[List[str]]], graph_hashes: Dict[int, List[str]]
+) -> Dict[int, List[List[str]]]:
+    """Adapt the node hashes so that it would align with a transformer-based model.
+
+    The graph labels are appended to each node label before estimating a
+    node or link prediction tasks' bounds. Note that this has no effect for graph
+    prediction tasks.
+
+    From a theoretical perspective, this is equivalent to the way a graph transformer
+    would predict a node or edge label since each node can attend to all other nodes
+    in the graph, consequently understanding the graph structure from a 1-WL
+    perspective. GNNs however often does not make use of a readout layer for node
+    or edge prediction tasks, which is why this option is disabled by default.
+
+    Parameters
+    ----------
+    node_hashes : Dict[int, List[List[str]]]
+        The node hashes to transform.
+    graph_hashes : Dict[int, List[str]]
+        The graph hashes to transform the node hashes with.
+
+    Returns
+    -------
+    node_hashes : Dict[int, List[List[str]]]
+        The transformed node hashes.
+    """
+    for k, graph_hashlists in node_hashes.items():
+        for i, hashlist in enumerate(graph_hashlists):
+            graph_hash = graph_hashes[k][i]
+            node_hashes[k][i] = [graph_hash + node_hash for node_hash in hashlist]
+    return node_hashes
 
 
 def _get_isomorphism_list(graphs: List[ig.Graph]) -> List[Optional[int]]:
