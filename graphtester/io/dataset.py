@@ -300,16 +300,16 @@ class Dataset:
                 else:
                     _labels.append(float(data_obj.y))
             if with_node_labels:
-                if torch.numel(data_obj.x[0]) > 1:
+                if torch.numel(data_obj.y[0]) > 1:
                     # try to convert from one-hot encoding
                     try:
                         _node_labels.append(
-                            [float(np.where(lbl == 1)[0]) for lbl in data_obj.x]
+                            [float(np.where(lbl == 1)[0]) for lbl in data_obj.y]
                         )
                     except ValueError:
                         raise ValueError("Multi-task classification not yet supported.")
                 else:
-                    _node_labels.append([float(lbl) for lbl in data_obj.x])
+                    _node_labels.append([float(lbl) for lbl in data_obj.y])
 
         if labels is None and with_graph_labels:
             labels = list(_labels)
