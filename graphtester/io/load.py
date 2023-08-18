@@ -388,5 +388,7 @@ def _load_graphs(
 
     if isinstance(graphs[0], nx.Graph):
         graphs = [ig.Graph.from_networkx(g) for g in graphs]
+        for g in graphs:
+            del g.vs["_nx_name"]
 
     return Dataset(graphs, labels, node_labels, edge_labels)
