@@ -1,24 +1,6 @@
 # Graphtester
 
-[![Lint and Test](https://github.com/meakbiyik/graphtester/actions/workflows/package.yaml/badge.svg)](https://github.com/meakbiyik/graphtester/actions/workflows/package.yaml) [![Documentation Status](https://readthedocs.org/projects/graphtester/badge/?version=latest)](https://graphtester.readthedocs.io/en/latest/?badge=latest)
-
 Graphtester is a Python package for comprehensive analysis of the theoretical capabilities of GNNs for various datasets, tasks, and scores, using an extension of the Weisfeiler-Lehman framework.
-
-You can read more about the theoretical background in our [paper](https://arxiv.org/abs/2306.17482).
-
-If you use Graphtester in your research, please cite:
-
-```bibtex
-@inproceedings{akbiyik2023graphtester,
-    title        = {{Graphtester: Exploring Theoretical Boundaries of GNNs on Graph Datasets}},
-    author       = {Eren Akbiyik and Florian Grötschla and Béni Egressy and Roger Wattenhofer},
-    year         = 2023,
-    month        = {July},
-    booktitle    = {{Data-centric Machine Learning Research (DMLR) Workshop at ICML 2023, Honolulu, Hawaii}}
-}
-```
-
-See documentation at [https://graphtester.readthedocs.io](https://graphtester.readthedocs.io).
 
 ## Reproducing the results in the paper
 
