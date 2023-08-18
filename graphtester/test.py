@@ -199,6 +199,10 @@ def weisfeiler_lehman_hash(
     hsh = None
     if return_hash:
         hsh = ";".join(sorted(node_labels))
+        # If the hash is too big, we use the hash of the hash
+        # to reduce the size of the label
+        if len(hsh) > 20:
+            hsh = str(hash(hsh))
 
     if return_graph:
         # Create a new graph with edge labels copied over, and node labels removed
@@ -484,7 +488,14 @@ def _aggregate_neighborhood(
     # Add a -1 prefix for consumers of the edge-reduced labels
     # into neat arrays
     label_list = [f"-1;{node_labels[node_idx]}"] + sorted(label_list)
-    return ",".join(label_list)
+    node_hash = ",".join(label_list)
+
+    # If the hash is too big, we use the hash of the hash
+    # to reduce the size of the label
+    if len(node_hash) > 20:
+        node_hash = str(hash(node_hash))
+
+    return node_hash
 
 
 def _reassign_labels(labels_g1, labels_g2=None) -> bool:
