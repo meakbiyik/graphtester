@@ -396,7 +396,7 @@ def _laplacian_positional_encoding(graph: ig.Graph, dim: int) -> List[str]:
     List[str]
         The labels.
     """
-    if dim < graph.vcount():
+    if dim > graph.vcount():
         dim = graph.vcount()
 
     laplacian = graph.laplacian()
@@ -456,6 +456,87 @@ def _random_walk_structural_encoding(graph: ig.Graph, steps: int) -> List[str]:
         for node_idx in range(graph.vcount())
     ]
 
+
+def _relative_random_walk_probabilities(graph: ig.Graph, steps: int):
+    """Encode the graph using the relative random walk probabilities (RRWP).
+
+    This method is similar to RWSE, but computes the relative probabilities
+    per node pair (i.e. edge of a complete graph). It is considered to be
+    an "edge rewiring" method in the context of Graphtester as it changes
+    the graph structure by converting it to a complete graph (with) newly
+    added edges having an indicative flag.
+
+    See GRIT paper for more details.
+
+    Parameters
+    ----------
+    graph : ig.Graph
+        The graph to encode.
+    steps : int
+        The number of random walk steps.
+    """
+    adjacency_matrix = graph.get_adjacency()
+    adjacency_matrix = np.array(adjacency_matrix.data)
+    adjacency_matrix = adjacency_matrix.reshape(
+        graph.vcount(), graph.vcount(), order="F"
+    )
+
+    diagonal_degree_matrix = np.diag(np.sum(adjacency_matrix, axis=1))
+    transition_matrix = np.linalg.pinv(diagonal_degree_matrix) @ adjacency_matrix
+
+    landing_probabilities = transition_matrix.copy()
+    node_pair_probabilities = []
+    for _ in range(1, steps + 1):
+        node_pair_probabilities.append(landing_probabilities)
+        landing_probabilities = landing_probabilities @ transition_matrix
+
+    for node_idx_1 in range(graph.vcount()):
+        for node_idx_2 in range(graph.vcount()):
+            if node_idx_1 == node_idx_2:
+                continue
+            # loop through the edges. If the edge exists, prepend a "n"
+            # to the label. Otherwise, prepend a "y" and add a new edge.
+            # then add the label to the edge.
+            new_label = ",".join([
+                        str(round(node_pair_probability[node_idx_1, node_idx_2], 6))
+                        for node_pair_probability in node_pair_probabilities
+                    ])
+            if graph[node_idx_1, node_idx_2]:
+                eid = graph.get_eid(node_idx_1, node_idx_2)
+                graph.es[eid]["label"] = "n" + new_label
+            else:
+                graph.add_edge(node_idx_1, node_idx_2, label="y" + new_label)
+
+def _shortest_path_distance_positional_encoding(graph: ig.Graph):
+    """Encode the graph using the shortest path distance positional encoding.
+
+    This method simply computes the shortest path distance between each node
+    and all other nodes in the graph, and adds it as an edge attribute. Similarly
+    to RRWP, this method is considered to be an "edge rewiring" method in the
+    context of Graphtester as it changes the graph structure by adding new edges.
+
+    See Graphormer paper for more details.
+
+    Parameters
+    ----------
+    graph : ig.Graph
+        The graph to encode.
+    """
+    shortest_path_distances = graph.shortest_paths()
+    for node_idx_1 in range(graph.vcount()):
+        distances_to_node = shortest_path_distances[node_idx_1]
+        for node_idx_2 in range(graph.vcount()):
+            if node_idx_1 == node_idx_2:
+                continue
+            # loop through the edges. If the edge exists, prepend a "n"
+            # to the label. Otherwise, prepend a "y" and add a new edge.
+            # then add the label to the edge.
+            new_label = str(round(distances_to_node[node_idx_2], 6))
+            if graph[node_idx_1, node_idx_2]:
+                eid = graph.get_eid(node_idx_1, node_idx_2)
+                graph.es[eid]["label"] = "n" + new_label
+            else:
+                graph.add_edge(node_idx_1, node_idx_2, label="y" + new_label)
 
 def _wl_hash_vertex_label(graph: ig.Graph) -> List[str]:
     """Label vertices by the 1-WL hash of the graph, after marking each.
@@ -736,6 +817,22 @@ EDGE_LABELING_METHODS = {
 
 EDGE_REWIRING_METHODS = {
     "Rewire by edge betweenness": _rewire_by_edge_betweenness,
+    "Relative random walk probabilities (steps=1)": lambda g: _relative_random_walk_probabilities(  # noqa: E501
+        g, steps=1
+    ),
+    "Relative random walk probabilities (steps=2)": lambda g: _relative_random_walk_probabilities(  # noqa: E501
+        g, steps=2
+    ),
+    "Relative random walk probabilities (steps=4)": lambda g: _relative_random_walk_probabilities(  # noqa: E501
+        g, steps=4
+    ),
+    "Relative random walk probabilities (steps=8)": lambda g: _relative_random_walk_probabilities(  # noqa: E501
+        g, steps=8
+    ),
+    "Relative random walk probabilities (steps=16)": lambda g: _relative_random_walk_probabilities(  # noqa: E501
+        g, steps=16
+    ),
+    "Shortest path distance positional encoding": _shortest_path_distance_positional_encoding,
 }
 
 ALL_METHODS = (
