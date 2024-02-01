@@ -3,6 +3,7 @@
 *.gz
 scripts/dataset/
 *.png
+*.out
 
 # Package-related
 *.pickle

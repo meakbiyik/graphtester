@@ -142,6 +142,20 @@ DATASETS = {
     # DGL link prediction datasets
     # "FB15k237": lambda dgl: dgl.data.FB15k237Dataset(**dgl_param),
     # "WN18Dataset": lambda dgl: dgl.data.WN18Dataset(**dgl_param),
+    # LRGB Datasets
+    "PascalVOC-SP": lambda pyg: pyg.datasets.LRGBDataset(
+        name="PascalVOC-SP", **pyg_param
+    ),
+    "COCO-SP": lambda pyg: pyg.datasets.LRGBDataset(name="COCO-SP", **pyg_param),
+    "PCQM-Contact": lambda pyg: pyg.datasets.LRGBDataset(
+        name="PCQM-Contact", **pyg_param
+    ),
+    "Peptides-func": lambda pyg: pyg.datasets.LRGBDataset(
+        name="Peptides-func", **pyg_param
+    ),
+    "Peptides-struct": lambda pyg: pyg.datasets.LRGBDataset(
+        name="Peptides-struct", **pyg_param
+    ),
 }
 
 

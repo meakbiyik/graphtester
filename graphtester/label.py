@@ -700,6 +700,12 @@ VERTEX_LABELING_METHODS = {
     "Laplacian positional encoding (dim=32)": lambda g: _laplacian_positional_encoding(
         g, dim=32
     ),
+    "Laplacian positional encoding (dim=64)": lambda g: _laplacian_positional_encoding(
+        g, dim=64
+    ),
+    "Laplacian positional encoding (dim=128)": lambda g: _laplacian_positional_encoding(
+        g, dim=128
+    ),
     "Random walk structural encoding (steps=1)": lambda g: _random_walk_structural_encoding(  # noqa: E501
         g, steps=1
     ),
@@ -717,6 +723,12 @@ VERTEX_LABELING_METHODS = {
     ),
     "Random walk structural encoding (steps=32)": lambda g: _random_walk_structural_encoding(  # noqa: E501
         g, steps=32
+    ),
+    "Random walk structural encoding (steps=64)": lambda g: _random_walk_structural_encoding(  # noqa: E501
+        g, steps=64
+    ),
+    "Random walk structural encoding (steps=128)": lambda g: _random_walk_structural_encoding(  # noqa: E501
+        g, steps=128
     ),
     "Marked WL hash vertex label": _wl_hash_vertex_label,
     "3-cycle count of vertices": lambda g: _count_substructure_vertices(
@@ -831,6 +843,15 @@ EDGE_REWIRING_METHODS = {
     ),
     "Relative random walk probabilities (steps=16)": lambda g: _relative_random_walk_probabilities(  # noqa: E501
         g, steps=16
+    ),
+    "Relative random walk probabilities (steps=32)": lambda g: _relative_random_walk_probabilities(  # noqa: E501
+        g, steps=32
+    ),
+    "Relative random walk probabilities (steps=64)": lambda g: _relative_random_walk_probabilities(  # noqa: E501
+        g, steps=64
+    ),
+    "Relative random walk probabilities (steps=128)": lambda g: _relative_random_walk_probabilities(  # noqa: E501
+        g, steps=128
     ),
     "Shortest path distance positional encoding": _shortest_path_distance_positional_encoding,
 }
